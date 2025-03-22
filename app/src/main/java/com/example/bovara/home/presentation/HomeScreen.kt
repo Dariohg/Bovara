@@ -44,22 +44,30 @@ import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ui.theme.AccentGreen
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import com.example.bovara.core.utils.ImageUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onNavigateToGanado: () -> Unit,
+    onNavigateToGanadoByCategory: () -> Unit,
+    onNavigateToGanadoByDate: () -> Unit,
     onNavigateToAddGanado: () -> Unit,
     onNavigateToVacunas: () -> Unit,
+    onNavigateToVacunacionHistorial: () -> Unit,
     onGanadoClick: (Int) -> Unit,
+    onNavigateToSearchResults: (String) -> Unit,
     viewModel: HomeViewModel
 ) {
     val ganado by viewModel.ganado.collectAsState()
+    val filteredGanado by viewModel.filteredGanado.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val isSearchActive by viewModel.isSearchActive.collectAsState()
 
     Scaffold(
         topBar = {
@@ -116,7 +124,6 @@ fun HomeScreen(
                     bottom = 80.dp
                 )
             ) {
-                // Barra de búsqueda
                 item {
                     OutlinedTextField(
                         value = searchQuery,
@@ -143,8 +150,48 @@ fun HomeScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
+                // Mostrar resultados de búsqueda si hay una consulta activa
+                if (isSearchActive) {
+                    item {
+                        SearchResultsHeader(
+                            query = searchQuery,
+                            resultCount = filteredGanado.size,
+                            onViewAllResults = {
+                                onNavigateToSearchResults(searchQuery)
+                            },
+                            onClearSearch = {
+                                viewModel.clearSearch()
+                            }
+                        )
+                    }
 
-                // Tarjeta principal de estadísticas
+                    // Mostrar los resultados filtrados
+                    items(filteredGanado.take(5)) { animal ->
+                        GanadoListItem(
+                            ganado = animal,
+                            onClick = { onGanadoClick(animal.id) }
+                        )
+                    }
+
+                    // Si hay más resultados, mostrar un botón para ver todos
+                    if (filteredGanado.size > 5) {
+                        item {
+                            Button(
+                                onClick = { onNavigateToSearchResults(searchQuery) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            ) {
+                                Text("Ver todos los resultados (${filteredGanado.size})")
+                            }
+                        }
+                    }
+                }
+
                 item {
                     StatsCard(ganado)
                 }
@@ -155,7 +202,8 @@ fun HomeScreen(
                         title = "Categorías",
                         icon = Icons.Rounded.Category,
                         actionText = "Ver todos",
-                        onActionClick = onNavigateToGanado
+                        onActionClick = onNavigateToGanadoByCategory
+
                     )
                 }
 
@@ -169,10 +217,9 @@ fun HomeScreen(
                             CategoryCard(
                                 title = "Vacas",
                                 count = ganado.count { it.tipo == "vaca" },
-                                iconRes = R.drawable.ic_cow, // Este parámetro ya no se usa
+                                iconRes = R.drawable.ic_cow,
                                 onClick = {
                                     viewModel.filterByType("vaca")
-                                    onNavigateToGanado()
                                 }
                             )
                         }
@@ -180,10 +227,9 @@ fun HomeScreen(
                             CategoryCard(
                                 title = "Toros",
                                 count = ganado.count { it.tipo == "toro" },
-                                iconRes = R.drawable.ic_bull, // Este parámetro ya no se usa
+                                iconRes = R.drawable.ic_bull,
                                 onClick = {
                                     viewModel.filterByType("toro")
-                                    onNavigateToGanado()
                                 }
                             )
                         }
@@ -191,19 +237,49 @@ fun HomeScreen(
                             CategoryCard(
                                 title = "Becerros",
                                 count = ganado.count { it.tipo.contains("becer", ignoreCase = true) },
-                                iconRes = R.drawable.ic_cow, // Este parámetro ya no se usa
+                                iconRes = R.drawable.ic_cow,
                                 onClick = {
                                     viewModel.filterByType("becerro")
-                                    onNavigateToGanado()
                                 }
                             )
                         }
                     }
                 }
 
-                // Acciones rápidas - Reemplazado por VaccinationCard
+                // Sección de Vacunas y Registros - CON LAS DOS TARJETAS
                 item {
-                    VaccinationCard(onClick = onNavigateToVacunas)
+                    SectionHeader(
+                        title = "Vacunas y Registros",
+                        icon = Icons.Outlined.HealthAndSafety,
+                        actionText = null,
+                        onActionClick = null
+                    )
+                }
+
+                // Dos tarjetas lado a lado
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Primera tarjeta: Vacunación por lotes
+                        ActionCard(
+                            title = "Vacunación por Lotes",
+                            description = "Aplicar vacunas a múltiples animales",
+                            icon = Icons.Outlined.HealthAndSafety,
+                            onClick = onNavigateToVacunas,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // Segunda tarjeta: Historial de vacunaciones
+                        ActionCard(
+                            title = "Historial",
+                            description = "Ver registro de vacunaciones",
+                            icon = Icons.Default.History,
+                            onClick = onNavigateToVacunacionHistorial,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
 
                 // Sección de Ganado Reciente
@@ -212,7 +288,8 @@ fun HomeScreen(
                         title = "Ganado Reciente",
                         icon = Icons.Rounded.History,
                         actionText = "Ver todos",
-                        onActionClick = onNavigateToGanado
+                        onActionClick = onNavigateToGanadoByDate
+
                     )
                 }
 
@@ -239,7 +316,6 @@ fun HomeScreen(
         }
     }
 }
-
 @Composable
 fun StatsCard(ganado: List<GanadoEntity>) {
     // Eliminamos la Card y usamos directamente un Box con sombra y fondo degradado
@@ -381,7 +457,7 @@ fun CategoryCard(
 ) {
     Card(
         modifier = Modifier
-            .width(120.dp)
+            .width(117.dp)
             .height(120.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
@@ -702,5 +778,95 @@ fun EmptyStateCard(
                 }
             }
         }
+    }
+}
+@Composable
+fun ActionCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .height(140.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color(0xFF4CAF50),
+                modifier = Modifier.size(32.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+@Composable
+fun SearchResultsHeader(
+    query: String,
+    resultCount: Int,
+    onViewAllResults: () -> Unit,
+    onClearSearch: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Resultados para \"$query\"",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            TextButton(onClick = onClearSearch) {
+                Text("Cancelar")
+            }
+        }
+
+        Text(
+            text = "$resultCount animales encontrados",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Divider()
     }
 }

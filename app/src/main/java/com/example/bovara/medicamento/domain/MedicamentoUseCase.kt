@@ -27,6 +27,12 @@ class MedicamentoUseCase(private val repository: MedicamentoRepository) {
     fun getMedicamentosByLote(lote: String): Flow<List<MedicamentoEntity>> =
         repository.getMedicamentosByLote(lote)
 
+    fun getMedicamentosGenericos(): Flow<List<MedicamentoEntity>> =
+        repository.getMedicamentosGenericos()
+
+    fun getMedicamentosGenericosByTipo(tipo: String): Flow<List<MedicamentoEntity>> =
+        repository.getMedicamentosGenericosByTipo(tipo)
+
     fun getMedicamentosRecientes(diasAtras: Int = 30): Flow<List<MedicamentoEntity>> {
         val fechaFin = Calendar.getInstance().time
         val fechaInicio = Calendar.getInstance().apply {
@@ -36,13 +42,14 @@ class MedicamentoUseCase(private val repository: MedicamentoRepository) {
         return repository.getMedicamentosByRangoDeFechas(fechaInicio, fechaFin)
     }
 
+
     suspend fun saveMedicamento(
         id: Int = 0,
         nombre: String,
         descripcion: String,
         fechaAplicacion: Date = Date(),
         dosisML: Float,
-        ganadoId: Int,
+        ganadoId: Int = 0,  // Aquí está el problema
         tipo: String = "vacuna",
         esProgramado: Boolean = false,
         lote: String? = null,
@@ -55,13 +62,15 @@ class MedicamentoUseCase(private val repository: MedicamentoRepository) {
         require(nombre.isNotBlank()) { "El nombre no puede estar vacío" }
         require(dosisML > 0) { "La dosis debe ser mayor que 0" }
 
+        val actualGanadoId = if (ganadoId <= 0) null else ganadoId
+
         val medicamento = MedicamentoEntity(
             id = id,
             nombre = nombre,
             descripcion = descripcion,
             fechaAplicacion = if (aplicado) fechaAplicacion else Date(),
             dosisML = dosisML,
-            ganadoId = ganadoId,
+            ganadoId = actualGanadoId,
             tipo = tipo,
             esProgramado = esProgramado,
             lote = lote,

@@ -13,11 +13,14 @@ import com.example.bovara.di.AppModule
 import com.example.bovara.ganado.presentation.AddGanadoScreen
 import com.example.bovara.ganado.presentation.EditGanadoScreen
 import com.example.bovara.ganado.presentation.GanadoDetailScreen
+import com.example.bovara.ganado.presentation.GanadoListMode
+import com.example.bovara.ganado.presentation.GanadoListScreen
 import com.example.bovara.home.presentation.HomeScreen
 import com.example.bovara.home.presentation.HomeViewModel
 import com.example.bovara.medicamento.presentation.AddVacunaScreen
 import com.example.bovara.medicamento.presentation.BatchDetailScreen
 import com.example.bovara.medicamento.presentation.BatchVaccinationScreen
+import com.example.bovara.medicamento.presentation.RegisterMedicamentoScreen
 import com.example.bovara.medicamento.presentation.VaccinationHistoryScreen
 import com.example.bovara.medicamento.presentation.VacunasGanadoScreen
 
@@ -28,6 +31,7 @@ fun NavigationWrapper() {
 
     NavHost(navController = navController, startDestination = Screens.HOME) {
         // Home/Dashboard
+        // En NavigationWrapper.kt
         composable(route = Screens.HOME) {
             // Obtener las dependencias necesarias
             val ganadoUseCase = AppModule.provideGanadoUseCase(context)
@@ -37,9 +41,13 @@ fun NavigationWrapper() {
                 factory = HomeViewModel.Factory(ganadoUseCase)
             )
 
+            // En NavigationWrapper.kt - el composable de HOME
             HomeScreen(
-                onNavigateToGanado = {
-                    navController.navigate(Screens.GANADO_LIST)
+                onNavigateToGanadoByCategory = {
+                    navController.navigate(Screens.GANADO_LIST_BY_CATEGORY)
+                },
+                onNavigateToGanadoByDate = {
+                    navController.navigate(Screens.GANADO_LIST_BY_DATE)
                 },
                 onNavigateToAddGanado = {
                     navController.navigate(Screens.ADD_GANADO)
@@ -47,9 +55,14 @@ fun NavigationWrapper() {
                 onNavigateToVacunas = {
                     navController.navigate(Screens.BATCH_VACCINATION)
                 },
+                onNavigateToVacunacionHistorial = {
+                    navController.navigate(Screens.VACCINATION_HISTORY)
+                },
                 onGanadoClick = { ganadoId ->
                     navController.navigate("${Screens.GANADO_DETAIL}/$ganadoId")
                 },
+                onNavigateToSearchResults = { query ->
+                    navController.navigate("${Screens.GANADO_LIST_BY_CATEGORY}?query=$query")                },
                 viewModel = homeViewModel
             )
         }
@@ -180,20 +193,7 @@ fun NavigationWrapper() {
             )
         }
 
-        // Vacunación por lotes
-        composable(route = Screens.BATCH_VACCINATION) {
-            BatchVaccinationScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onFinishVaccination = {
-                    // Navegar al historial después de completar
-                    navController.navigate(Screens.VACCINATION_HISTORY) {
-                        popUpTo(Screens.BATCH_VACCINATION) { inclusive = true }
-                    }
-                }
-            )
-        }
+
 
         // Historial de vacunaciones
         composable(route = Screens.VACCINATION_HISTORY) {
@@ -223,5 +223,115 @@ fun NavigationWrapper() {
                 }
             )
         }
+
+        composable(route = Screens.REGISTER_MEDICAMENTO) {
+            RegisterMedicamentoScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onMedicamentoRegistered = { medicamentoId ->
+                    // Solo guardar el ID en lugar del objeto completo
+                    navController.previousBackStackEntry?.savedStateHandle?.set(
+                        "selected_medicamento_id",
+                        medicamentoId
+                    )
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = Screens.BATCH_VACCINATION) {
+            // Obtener el ID del medicamento desde savedStateHandle si existe
+            val medicamentoId = navController.currentBackStackEntry?.savedStateHandle?.get<Int>("selected_medicamento_id")
+
+            BatchVaccinationScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onFinishVaccination = {
+                    navController.navigate(Screens.VACCINATION_HISTORY) {
+                        popUpTo(Screens.BATCH_VACCINATION) { inclusive = true }
+                    }
+                },
+                onNavigateToRegisterMedicamento = {
+                    navController.navigate(Screens.REGISTER_MEDICAMENTO)
+                },
+                selectedMedicamentoId = medicamentoId
+            )
+
+            // Limpiar para evitar duplicados
+            if (medicamentoId != null) {
+                navController.currentBackStackEntry?.savedStateHandle?.remove<Int>("selected_medicamento_id")
+            }
+        }
+        composable(
+            route = "${Screens.GANADO_LIST_BY_CATEGORY}?query={query}",
+            arguments = listOf(
+                navArgument("query") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                }
+            )
+        ) { backStackEntry ->
+            val searchQuery = backStackEntry.arguments?.getString("query") ?: ""
+
+            GanadoListScreen(
+                mode = GanadoListMode.BY_CATEGORY,
+                initialSearchQuery = searchQuery,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onGanadoClick = { ganadoId ->
+                    navController.navigate("${Screens.GANADO_DETAIL}/$ganadoId")
+                }
+            )
+        }
+
+
+        composable(
+            route = "${Screens.GANADO_LIST_BY_DATE}?query={query}",
+            arguments = listOf(
+                navArgument("query") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                }
+            )
+        ) { backStackEntry ->
+            val searchQuery = backStackEntry.arguments?.getString("query") ?: ""
+
+            GanadoListScreen(
+                mode = GanadoListMode.BY_DATE,
+                initialSearchQuery = searchQuery,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onGanadoClick = { ganadoId ->
+                    navController.navigate("${Screens.GANADO_DETAIL}/$ganadoId")
+                }
+            )
+        }
+
+        composable(
+            route = Screens.GANADO_SEARCH,
+            arguments = listOf(
+                navArgument("query") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val searchQuery = backStackEntry.arguments?.getString("query") ?: ""
+
+            GanadoListScreen(
+                mode = GanadoListMode.BY_CATEGORY,
+                initialSearchQuery = searchQuery,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onGanadoClick = { ganadoId ->
+                    navController.navigate("${Screens.GANADO_DETAIL}/$ganadoId")
+                }
+            )
+        }
+
     }
 }

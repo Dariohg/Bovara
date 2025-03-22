@@ -38,4 +38,10 @@ class MedicamentoRepository(private val medicamentoDao: MedicamentoDao) {
 
     suspend fun deleteMedicamento(medicamento: MedicamentoEntity) =
         medicamentoDao.deleteMedicamento(medicamento)
+
+    fun getMedicamentosGenericos(): Flow<List<MedicamentoEntity>> =
+        medicamentoDao.getMedicamentosGenericos()
+
+    fun getMedicamentosGenericosByTipo(tipo: String): Flow<List<MedicamentoEntity>> =
+        medicamentoDao.getMedicamentosGenericosByTipo(tipo)
 }

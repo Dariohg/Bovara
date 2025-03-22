@@ -4,6 +4,8 @@ object Screens {
     const val HOME = "home"
 
     // Rutas para gestión de ganado
+    const val GANADO_LIST_BY_CATEGORY = "ganado_list_by_category"
+    const val GANADO_LIST_BY_DATE = "ganado_list_by_date"
     const val GANADO_LIST = "ganado_list"
     const val ADD_GANADO = "add_ganado"
     const val EDIT_GANADO = "edit_ganado"
@@ -20,4 +22,8 @@ object Screens {
     const val BATCH_VACCINATION = "batch_vaccination"
     const val VACCINATION_HISTORY = "vaccination_history"
     const val BATCH_DETAIL = "batch_detail"
+    const val REGISTER_MEDICAMENTO = "register_medicamento"
+    const val GANADO_SEARCH = "ganado_search/{query}"
+
+
 }

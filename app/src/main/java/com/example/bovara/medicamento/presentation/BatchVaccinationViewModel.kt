@@ -46,13 +46,12 @@ class BatchVaccinationViewModel(
     private fun loadMedicamentosDisponibles() {
         viewModelScope.launch {
             try {
-                // Aquí podríamos filtrar por medicamentos tipo vacuna
-                val medicamentos = medicamentoUseCase.getMedicamentosByTipo("vacuna").first()
-                _state.update { it.copy(
-                    medicamentosDisponibles = medicamentos
-                )}
+                medicamentoUseCase.getMedicamentosGenericos().collect { medicamentos ->
+                    _state.update { it.copy(
+                        medicamentosDisponibles = medicamentos
+                    )}
+                }
             } catch (e: Exception) {
-                // Manejar error
             }
         }
     }
@@ -72,33 +71,53 @@ class BatchVaccinationViewModel(
                 )}
             }
 
+            // File: app/src/main/java/com/example/bovara/medicamento/presentation/BatchVaccinationViewModel.kt
+
+// En la función onEvent, dentro del case para NewMedicamentoCreated
             is BatchVaccinationEvent.NewMedicamentoCreated -> {
                 viewModelScope.launch {
                     try {
-                        // Crear nuevo medicamento en la BD
+                        // Validar los datos antes de intentar guardar
+                        if (event.nombre.isBlank() || event.descripcion.isBlank()) {
+                            _state.update { it.copy(
+                                error = "El nombre y la descripción son requeridos"
+                            )}
+                            return@launch
+                        }
+
+                        // Crear nuevo medicamento en la BD con valores por defecto razonables
                         val id = medicamentoUseCase.saveMedicamento(
                             nombre = event.nombre,
                             descripcion = event.descripcion,
                             dosisML = 5.0f, // Valor por defecto
                             ganadoId = 0, // ID genérico para medicamentos de vacunación por lotes
                             tipo = "vacuna",
-                            esProgramado = true
+                            esProgramado = false, // Cambiar a false ya que se aplicará de inmediato
+                            aplicado = false // Inicialmente no aplicado
                         )
 
                         // Obtener el medicamento recién creado
                         val nuevoMedicamento = medicamentoUseCase.getMedicamentoById(id.toInt()).first()
 
-                        // Actualizar estado
+                        // Actualizar estado solo si se obtuvo el medicamento
                         nuevoMedicamento?.let { med ->
                             _state.update { it.copy(
                                 selectedMedicamento = med,
                                 dosisML = med.dosisML,
-                                medicamentosDisponibles = it.medicamentosDisponibles + med
+                                medicamentosDisponibles = it.medicamentosDisponibles + med,
+                                error = null // Limpiar cualquier error previo
+                            )}
+                        } ?: run {
+                            // Manejar el caso donde no se pudo obtener el medicamento
+                            _state.update { it.copy(
+                                error = "Error al obtener el medicamento creado"
                             )}
                         }
-// continuación de BatchVaccinationViewModel.kt
                     } catch (e: Exception) {
-                        // Manejar error
+                        // Manejar errores específicamente
+                        _state.update { it.copy(
+                            error = "Error al crear medicamento: ${e.message}"
+                        )}
                     }
                 }
             }

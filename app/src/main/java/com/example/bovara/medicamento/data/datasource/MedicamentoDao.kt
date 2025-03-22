@@ -39,4 +39,9 @@ interface MedicamentoDao {
 
     @Delete
     suspend fun deleteMedicamento(medicamento: MedicamentoEntity)
+    @Query("SELECT * FROM medicamentos WHERE ganadoId IS NULL OR ganadoId = 0")
+    fun getMedicamentosGenericos(): Flow<List<MedicamentoEntity>>
+
+    @Query("SELECT * FROM medicamentos WHERE tipo = :tipo AND (ganadoId IS NULL OR ganadoId = 0)")
+    fun getMedicamentosGenericosByTipo(tipo: String): Flow<List<MedicamentoEntity>>
 }

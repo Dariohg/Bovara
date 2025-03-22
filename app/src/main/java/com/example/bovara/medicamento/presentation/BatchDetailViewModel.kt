@@ -46,7 +46,7 @@ class BatchDetailViewModel(
                     val animalesWithVacunas = mutableListOf<GanadoWithVacuna>()
 
                     for (vacuna in vacunas) {
-                        val ganado = ganadoUseCase.getGanadoById(vacuna.ganadoId).first()
+                        val ganado = vacuna.ganadoId?.let { ganadoUseCase.getGanadoById(it).first() }
                         ganado?.let {
                             animalesWithVacunas.add(GanadoWithVacuna(it, vacuna))
                         }

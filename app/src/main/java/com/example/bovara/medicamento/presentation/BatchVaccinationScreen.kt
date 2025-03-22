@@ -39,7 +39,9 @@ import com.example.bovara.medicamento.data.model.MedicamentoEntity
 @Composable
 fun BatchVaccinationScreen(
     onNavigateBack: () -> Unit,
-    onFinishVaccination: () -> Unit
+    onFinishVaccination: () -> Unit,
+    onNavigateToRegisterMedicamento: () -> Unit,
+    selectedMedicamentoId: Int? = null
 ) {
     val context = LocalContext.current
     val ganadoUseCase = AppModule.provideGanadoUseCase(context)
@@ -54,6 +56,17 @@ fun BatchVaccinationScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var showConfirmSave by remember { mutableStateOf(false) }
     var showConfirmPause by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedMedicamentoId) {
+        selectedMedicamentoId?.let { id ->
+            // Cargar el medicamento usando el ID
+            medicamentoUseCase.getMedicamentoById(id).collect { medicamento ->
+                medicamento?.let {
+                    viewModel.onEvent(BatchVaccinationEvent.MedicamentoSelected(it))
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -373,9 +386,9 @@ fun BatchVaccinationScreen(
                 viewModel.onEvent(BatchVaccinationEvent.MedicamentoSelected(medicamento))
                 showMedicamentoPicker = false
             },
-            onCreateNewMedicamento = { nombre, descripcion ->
-                viewModel.onEvent(BatchVaccinationEvent.NewMedicamentoCreated(nombre, descripcion))
+            onCreateNewRequested = {
                 showMedicamentoPicker = false
+                onNavigateToRegisterMedicamento()
             }
         )
     }
@@ -586,112 +599,63 @@ fun MedicamentoPickerDialog(
     medicamentos: List<MedicamentoEntity>,
     onDismiss: () -> Unit,
     onMedicamentoSelected: (MedicamentoEntity) -> Unit,
-    onCreateNewMedicamento: (String, String) -> Unit
+    onCreateNewRequested: () -> Unit // Cambiamos por una función que navegue a la pantalla de registro
 ) {
-    var showNewMedicamentoForm by remember { mutableStateOf(false) }
-    var newMedicamentoNombre by remember { mutableStateOf("") }
-    var newMedicamentoDescripcion by remember { mutableStateOf("") }
-
-    if (showNewMedicamentoForm) {
-        AlertDialog(
-            onDismissRequest = { showNewMedicamentoForm = false },
-            title = { Text("Nuevo Medicamento") },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    OutlinedTextField(
-                        value = newMedicamentoNombre,
-                        onValueChange = { newMedicamentoNombre = it },
-                        label = { Text("Nombre") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    OutlinedTextField(
-                        value = newMedicamentoDescripcion,
-                        onValueChange = { newMedicamentoDescripcion = it },
-                        label = { Text("Descripción") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (newMedicamentoNombre.isNotBlank() && newMedicamentoDescripcion.isNotBlank()) {
-                            onCreateNewMedicamento(newMedicamentoNombre, newMedicamentoDescripcion)
-                            showNewMedicamentoForm = false
-                        }
-                    },
-                    enabled = newMedicamentoNombre.isNotBlank() && newMedicamentoDescripcion.isNotBlank()
-                ) {
-                    Text("Crear")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNewMedicamentoForm = false }) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    } else {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("Seleccionar Medicamento") },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 400.dp)
-                ) {
-                    if (medicamentos.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No hay medicamentos disponibles",
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Seleccionar Medicamento") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+            ) {
+                if (medicamentos.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No hay medicamentos disponibles",
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        medicamentos.forEach { medicamento ->
+                            MedicamentoPickerItem(
+                                medicamento = medicamento,
+                                onClick = { onMedicamentoSelected(medicamento) }
                             )
-                        }
-                    } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            medicamentos.forEach { medicamento ->
-                                MedicamentoPickerItem(
-                                    medicamento = medicamento,
-                                    onClick = { onMedicamentoSelected(medicamento) }
-                                )
-                            }
                         }
                     }
                 }
-            },
-            confirmButton = {
-                Button(onClick = { showNewMedicamentoForm = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Nuevo")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancelar")
-                }
             }
-        )
-    }
+        },
+        confirmButton = {
+            Button(onClick = onCreateNewRequested) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Nuevo Medicamento")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
 }
 
 @Composable

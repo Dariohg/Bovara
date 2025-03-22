@@ -8,6 +8,7 @@ import com.example.bovara.ganado.domain.GanadoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -23,6 +24,9 @@ class HomeViewModel(
                 initialValue = emptyList()
             )
 
+    private val _filteredGanado = MutableStateFlow<List<GanadoEntity>>(emptyList())
+    val filteredGanado: StateFlow<List<GanadoEntity>> = _filteredGanado
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -32,15 +36,26 @@ class HomeViewModel(
     private val _selectedType = MutableStateFlow<String?>(null)
     val selectedType: StateFlow<String?> = _selectedType
 
+    private val _isSearchActive = MutableStateFlow(false)
+    val isSearchActive: StateFlow<Boolean> = _isSearchActive
+
     init {
         refreshData()
-    }
-
-    fun refreshData() {
+        // Observar los cambios en la consulta y actualizar los resultados filtrados
         viewModelScope.launch {
-            _isLoading.value = true
-            // La lógica se ejecuta automáticamente a través de los StateFlows
-            _isLoading.value = false
+            combine(searchQuery, ganado) { query, ganadoList ->
+                if (query.isBlank()) {
+                    ganadoList
+                } else {
+                    ganadoList.filter {
+                        it.numeroArete.contains(query, ignoreCase = true) ||
+                                it.apodo?.contains(query, ignoreCase = true) == true
+                    }
+                }
+            }.collect { filtered ->
+                _filteredGanado.value = filtered
+                _isSearchActive.value = _searchQuery.value.isNotBlank()
+            }
         }
     }
 
@@ -52,16 +67,16 @@ class HomeViewModel(
         _selectedType.value = type
     }
 
-    /**
-     * Factory para crear instancias de HomeViewModel con las dependencias necesarias
-     */
-    class Factory(private val ganadoUseCase: GanadoUseCase) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-                return HomeViewModel(ganadoUseCase) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
+    fun refreshData() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            // La lógica se ejecuta automáticamente a través de los StateFlows
+            _isLoading.value = false
         }
+    }
+
+    fun clearSearch() {
+        _searchQuery.value = ""
+        _isSearchActive.value = false
     }
 }
