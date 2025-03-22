@@ -3,6 +3,7 @@ package com.example.bovara.medicamento.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.ganado.domain.GanadoUseCase
 import com.example.bovara.medicamento.domain.MedicamentoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -92,10 +93,14 @@ class AddVacunaViewModel(
                 }
             }
             is AddVacunaEvent.FechaAplicacionChanged -> {
-                _state.update { it.copy(fechaAplicacion = event.value) }
+                // Normalizar la fecha para evitar problemas de zona horaria
+                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.value)
+                _state.update { it.copy(fechaAplicacion = normalizedDate) }
             }
             is AddVacunaEvent.FechaProgramadaChanged -> {
-                _state.update { it.copy(fechaProgramada = event.value) }
+                // Normalizar la fecha para evitar problemas de zona horaria
+                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.value)
+                _state.update { it.copy(fechaProgramada = normalizedDate) }
             }
             is AddVacunaEvent.RecordatorioChanged -> {
                 _state.update { it.copy(recordatorio = event.value) }

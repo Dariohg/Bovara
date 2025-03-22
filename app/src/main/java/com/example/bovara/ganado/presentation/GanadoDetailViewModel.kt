@@ -10,6 +10,7 @@ import com.example.bovara.medicamento.domain.MedicamentoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -61,8 +62,8 @@ class GanadoDetailViewModel(
                         loadMadre(madreId)
                     }
 
-                    // Si el animal es una vaca, cargar sus crías
-                    if (ganado?.tipo == "vaca") {
+                    // Si el animal es una vaca o una becerra, cargar sus crías
+                    if (ganado?.tipo == "vaca" || ganado?.tipo == "becerra") {
                         loadCrias(ganado.id)
                     }
                 }
@@ -91,18 +92,48 @@ class GanadoDetailViewModel(
         }
     }
 
-    private fun loadCrias(vacaId: Int) {
+    private fun loadCrias(madreId: Int) {
         viewModelScope.launch {
             try {
-                ganadoUseCase.getCriasByMadreId(vacaId).collectLatest { crias ->
+                ganadoUseCase.getCriasByMadreId(madreId).collectLatest { crias ->
                     _state.update {
                         it.copy(crias = crias)
+                    }
+
+                    // Si es una becerra y tiene alguna cría, convertirla a vaca
+                    val currentGanado = _state.value.ganado
+                    if (currentGanado?.tipo == "becerra" && crias.isNotEmpty()) {
+                        convertBecerraToVaca(currentGanado)
                     }
                 }
             } catch (e: Exception) {
                 // Si falla la carga de crías, actualizamos el estado con lista vacía
                 _state.update {
                     it.copy(crias = emptyList())
+                }
+            }
+        }
+    }
+
+    // Función para convertir una becerra a vaca cuando tiene su primera cría
+    private fun convertBecerraToVaca(becerra: GanadoEntity) {
+        viewModelScope.launch {
+            try {
+                // Registrar lo que estamos haciendo para debug
+                println("Convirtiendo becerra (id=${becerra.id}) a vaca")
+
+                // Actualizar el tipo de becerra a vaca
+                val updatedGanado = becerra.copy(tipo = "vaca")
+
+                // Actualizar el ganado en la base de datos
+                ganadoUseCase.updateGanado(updatedGanado)
+
+                // Forzar una recarga de los datos para reflejar el cambio inmediatamente
+                loadGanado()
+            } catch (e: Exception) {
+                println("Error al convertir becerra a vaca: ${e.message}")
+                _state.update {
+                    it.copy(error = "Error al actualizar el tipo del animal: ${e.message}")
                 }
             }
         }

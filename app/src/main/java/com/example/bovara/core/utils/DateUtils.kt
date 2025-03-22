@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 object DateUtils {
 
@@ -59,5 +60,18 @@ object DateUtils {
             months > 0 -> "$months ${if (months == 1) "mes" else "meses"}"
             else -> "Menos de 1 mes"
         }
+    }
+
+    fun normalizeDateToLocalMidnight(date: Date): Date {
+        val calendar = Calendar.getInstance()
+        calendar.time = date
+
+        // Establecer la hora a medianoche
+        calendar.set(Calendar.HOUR_OF_DAY, 12)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+
+        return calendar.time
     }
 }

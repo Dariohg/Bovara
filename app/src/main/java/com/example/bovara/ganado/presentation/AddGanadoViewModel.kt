@@ -3,6 +3,7 @@ package com.example.bovara.ganado.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ganado.domain.GanadoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,8 +49,10 @@ class AddGanadoViewModel(
     private fun loadVacasActivas() {
         viewModelScope.launch {
             try {
+                // En este punto, solo vamos a cargar las vacas (no becerras) como posibles madres
+                // para mantener el comportamiento actual
                 val vacas = ganadoUseCase.getGanadoByEstado("activo").first()
-                    .filter { it.tipo == "vaca" } // Solo incluir vacas
+                    .filter { it.tipo == "vaca" } // Solo incluir vacas, no becerras
 
                 _state.update { it.copy(vacasDisponibles = vacas) }
             } catch (e: Exception) {
@@ -90,7 +93,9 @@ class AddGanadoViewModel(
                 checkCanSave()
             }
             is AddGanadoEvent.FechaNacimientoChanged -> {
-                _state.update { it.copy(fechaNacimiento = event.value) }
+                // Normalizar la fecha para evitar problemas de zona horaria
+                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.value)
+                _state.update { it.copy(fechaNacimiento = normalizedDate) }
             }
             is AddGanadoEvent.EstadoChanged -> {
                 _state.update { it.copy(estado = event.value) }

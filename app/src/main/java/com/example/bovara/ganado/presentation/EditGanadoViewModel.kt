@@ -3,6 +3,7 @@ package com.example.bovara.ganado.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ganado.domain.GanadoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,7 +81,9 @@ class EditGanadoViewModel(
                 checkCanSave()
             }
             is EditGanadoEvent.FechaNacimientoChanged -> {
-                _state.update { it.copy(fechaNacimiento = event.value) }
+                // Normalizar la fecha para evitar problemas de zona horaria
+                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.value)
+                _state.update { it.copy(fechaNacimiento = normalizedDate) }
             }
             is EditGanadoEvent.EstadoChanged -> {
                 _state.update { it.copy(estado = event.value) }

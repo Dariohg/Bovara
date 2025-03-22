@@ -32,65 +32,10 @@ import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.core.utils.ImageUtils
 import com.example.bovara.di.AppModule
 import com.example.bovara.ganado.data.model.GanadoEntity
+import com.example.bovara.ganado.presentation.components.CriaItem
 import com.example.bovara.ui.theme.AccentGreen
 
-// Componente para cada elemento de cría (movido fuera del composable principal)
-@Composable
-fun CriaItem(
-    cria: GanadoEntity,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Icono según el tipo
-        Icon(
-            imageVector = when (cria.tipo) {
-                "becerro", "torito" -> Icons.Default.Male
-                "becerra" -> Icons.Default.Female
-                else -> Icons.Default.Pets
-            },
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
 
-        Spacer(modifier = Modifier.width(16.dp))
-
-        // Información de la cría
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = cria.apodo ?: "Sin nombre",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium
-            )
-
-            Text(
-                text = "Arete: ${cria.numeroArete}",
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            cria.fechaNacimiento?.let { fecha ->
-                Text(
-                    text = "Fecha de nacimiento: ${DateUtils.formatDate(fecha)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        // Flecha para navegar al detalle
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = "Ver detalle",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -481,8 +426,8 @@ fun GanadoDetailScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // Sección para mostrar las crías (si es una vaca)
-                if (state.ganado?.tipo == "vaca") {
+                // Sección para mostrar las crías (si es una vaca o becerra)
+                if (state.ganado?.tipo == "vaca" || state.ganado?.tipo == "becerra") {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -514,7 +459,7 @@ fun GanadoDetailScreen(
                                     )
                                 }
 
-                                // Botón para agregar cría
+                                // Botón para agregar cría (solo si el animal está activo)
                                 if (state.ganado?.estado == "activo") {
                                     Button(
                                         onClick = {

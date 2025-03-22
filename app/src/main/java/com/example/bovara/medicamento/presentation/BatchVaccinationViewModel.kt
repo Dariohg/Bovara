@@ -1,9 +1,9 @@
-// File: app/src/main/java/com/example/bovara/medicamento/presentation/BatchVaccinationViewModel.kt
 package com.example.bovara.medicamento.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ganado.domain.GanadoUseCase
 import com.example.bovara.medicamento.data.model.MedicamentoEntity
@@ -71,9 +71,6 @@ class BatchVaccinationViewModel(
                 )}
             }
 
-            // File: app/src/main/java/com/example/bovara/medicamento/presentation/BatchVaccinationViewModel.kt
-
-// En la función onEvent, dentro del case para NewMedicamentoCreated
             is BatchVaccinationEvent.NewMedicamentoCreated -> {
                 viewModelScope.launch {
                     try {
@@ -123,8 +120,10 @@ class BatchVaccinationViewModel(
             }
 
             is BatchVaccinationEvent.DateChanged -> {
+                // Normalizar la fecha para evitar problemas de zona horaria
+                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.date)
                 _state.update { it.copy(
-                    fechaAplicacion = event.date
+                    fechaAplicacion = normalizedDate
                 )}
             }
 
