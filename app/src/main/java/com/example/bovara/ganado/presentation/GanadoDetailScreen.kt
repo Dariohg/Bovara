@@ -299,6 +299,282 @@ fun GanadoDetailScreen(
                     }
                 }
 
+                // Estas son las secciones para añadir a GanadoDetailScreen.kt
+
+// Añadir justo después de la Card de información principal
+// Sección para mostrar información de la madre (si tiene)
+                if (state.madre != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Female,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text(
+                                    text = "Información de la Madre",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Spacer(modifier = Modifier.weight(1f))
+
+                                // Botón para ver detalle de la madre
+                                IconButton(
+                                    onClick = {
+                                        state.madre?.id?.let { madreId ->
+                                            onGanadoClick(madreId)
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = "Ver madre"
+                                    )
+                                }
+                            }
+
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                            // Datos principales de la madre
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Círculo con la inicial o foto pequeña de la madre
+                                Box(
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (state.madre?.imagenUrl != null) {
+                                        val bitmap = remember(state.madre?.imagenUrl) {
+                                            ImageUtils.loadImageFromInternalStorage(context, state.madre?.imagenUrl!!)
+                                        }
+
+                                        if (bitmap != null) {
+                                            Image(
+                                                bitmap = bitmap.asImageBitmap(),
+                                                contentDescription = "Madre",
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        } else {
+                                            Text(
+                                                text = (state.madre?.apodo?.firstOrNull() ?: "M").toString(),
+                                                style = MaterialTheme.typography.titleLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    } else {
+                                        Text(
+                                            text = (state.madre?.apodo?.firstOrNull() ?: "M").toString(),
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(16.dp))
+
+                                // Información de la madre
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = state.madre?.apodo ?: "Sin nombre",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+
+                                    Text(
+                                        text = "Arete: ${state.madre?.numeroArete}",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+
+                                    Text(
+                                        text = "Cantidad de crías: ${state.madre?.cantidadCrias}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // Sección para mostrar las crías (si es una vaca)
+                if (state.ganado?.tipo == "vaca") {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.ChildCare,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Text(
+                                        text = "Crías",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                // Botón para agregar cría
+                                if (state.ganado?.estado == "activo") {
+                                    Button(
+                                        onClick = {
+                                            // Navegar a pantalla de agregar cría con la madre preseleccionada
+                                            onNavigateToAddCria(state.ganado!!.id)
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary
+                                        )
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+
+                                        Spacer(modifier = Modifier.width(4.dp))
+
+                                        Text("Agregar Cría")
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            if (state.crias.isEmpty()) {
+                                // Mensaje si no hay crías
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(100.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No hay crías registradas",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            } else {
+                                // Lista de crías
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    state.crias.forEach { cria ->
+                                        CriaItem(
+                                            cria = cria,
+                                            onClick = { onGanadoClick(cria.id) }
+                                        )
+
+                                        Divider()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // Componente para cada elemento de cría
+                @Composable
+                fun CriaItem(
+                    cria: GanadoEntity,
+                    onClick: () -> Unit
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onClick)
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Icono según el tipo
+                        Icon(
+                            imageVector = when (cria.tipo) {
+                                "becerro", "torito" -> Icons.Default.Male
+                                "becerra" -> Icons.Default.Female
+                                else -> Icons.Default.Pets
+                            },
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // Información de la cría
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = cria.apodo ?: "Sin nombre",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Text(
+                                text = "Arete: ${cria.numeroArete}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+
+                            cria.fechaNacimiento?.let { fecha ->
+                                Text(
+                                    text = "Fecha de nacimiento: ${DateUtils.formatDate(fecha)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        // Flecha para navegar al detalle
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "Ver detalle",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
                 // Historial de vacunas (placeholder, implementar cuando se tenga la funcionalidad)
                 Card(
                     modifier = Modifier.fillMaxWidth(),

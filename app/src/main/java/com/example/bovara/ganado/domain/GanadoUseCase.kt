@@ -1,12 +1,16 @@
 package com.example.bovara.ganado.domain
 
+import com.example.bovara.crianza.domain.CrianzaUseCase
 import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ganado.data.repository.GanadoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.util.Date
 
-class GanadoUseCase(private val repository: GanadoRepository) {
+class GanadoUseCase(
+    private val repository: GanadoRepository,
+    private val crianzaUseCase: CrianzaUseCase? = null // Inyección opcional del CrianzaUseCase
+) {
     fun getAllGanado(): Flow<List<GanadoEntity>> = repository.getAllGanado()
 
     fun getGanadoById(id: Int): Flow<GanadoEntity?> = repository.getGanadoById(id)
@@ -26,6 +30,33 @@ class GanadoUseCase(private val repository: GanadoRepository) {
      */
     suspend fun areteExists(numeroArete: String): Boolean {
         return repository.countByNumeroArete(numeroArete) > 0
+    }
+
+    /**
+     * Registra una relación de crianza entre una madre y su cría
+     * @param madreId ID de la madre
+     * @param criaId ID de la cría
+     * @param fechaNacimiento Fecha de nacimiento de la cría
+     * @param notas Notas adicionales sobre la crianza
+     * @return ID de la crianza registrada
+     */
+    suspend fun registrarCrianza(
+        madreId: Int,
+        criaId: Int,
+        fechaNacimiento: Date,
+        notas: String? = null
+    ): Long {
+        if (crianzaUseCase == null) {
+            throw IllegalStateException("CrianzaUseCase no inicializado")
+        }
+
+        // Registrar la crianza utilizando el caso de uso de Crianza
+        return crianzaUseCase.registrarCria(
+            madreId = madreId,
+            criaId = criaId,
+            fechaNacimiento = fechaNacimiento,
+            notas = notas
+        )
     }
 
     suspend fun saveGanado(
@@ -70,6 +101,20 @@ class GanadoUseCase(private val repository: GanadoRepository) {
         // Validación del estado
         require(estado in listOf("activo", "vendido", "muerto")) {
             "El estado debe ser 'activo', 'vendido' o 'muerto'"
+        }
+
+        // Si es una cría y tiene madreId, validar que la madre exista y sea una vaca
+        if (madreId != null) {
+            val madre = repository.getGanadoById(madreId).first()
+            if (madre == null) {
+                throw IllegalArgumentException("La madre seleccionada no existe")
+            }
+            if (madre.tipo != "vaca") {
+                throw IllegalArgumentException("La madre debe ser de tipo 'vaca'")
+            }
+            if (madre.estado != "activo") {
+                throw IllegalArgumentException("La madre debe estar activa")
+            }
         }
 
         val ganado = GanadoEntity(

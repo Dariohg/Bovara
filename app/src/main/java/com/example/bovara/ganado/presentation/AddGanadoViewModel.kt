@@ -3,19 +3,60 @@ package com.example.bovara.ganado.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ganado.domain.GanadoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Date
 
 class AddGanadoViewModel(
-    private val ganadoUseCase: GanadoUseCase
+    private val ganadoUseCase: GanadoUseCase,
+    private val madreId: Int? = null // Parámetro opcional para pre-seleccionar una madre
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AddGanadoState())
     val state: StateFlow<AddGanadoState> = _state
+
+    init {
+        // Si se proporciona un ID de madre, cargar los datos de esa madre
+        madreId?.let { id ->
+            viewModelScope.launch {
+                try {
+                    val madre = ganadoUseCase.getGanadoById(id).first()
+                    madre?.let {
+                        // Actualizar el estado con la madre seleccionada
+                        _state.update { state ->
+                            state.copy(
+                                madreSeleccionada = madre,
+                                madreId = madre.id
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Manejar error si no se puede cargar la madre
+                }
+            }
+        }
+
+        // Cargar todas las vacas activas para la selección de madre
+        loadVacasActivas()
+    }
+
+    private fun loadVacasActivas() {
+        viewModelScope.launch {
+            try {
+                val vacas = ganadoUseCase.getGanadoByEstado("activo").first()
+                    .filter { it.tipo == "vaca" } // Solo incluir vacas
+
+                _state.update { it.copy(vacasDisponibles = vacas) }
+            } catch (e: Exception) {
+                // Manejar error si no se pueden cargar las vacas
+            }
+        }
+    }
 
     fun onEvent(event: AddGanadoEvent) {
         when (event) {
@@ -38,6 +79,10 @@ class AddGanadoViewModel(
                 _state.update { it.copy(tipo = event.value) }
                 validateTipo()
                 checkCanSave()
+
+                // Si el tipo es becerro, becerra o torito, mostrar selector de madre
+                val esCria = event.value in listOf("becerro", "becerra", "torito")
+                _state.update { it.copy(mostrarSelectorMadre = esCria) }
             }
             is AddGanadoEvent.ColorChanged -> {
                 _state.update { it.copy(color = event.value) }
@@ -52,6 +97,12 @@ class AddGanadoViewModel(
             }
             is AddGanadoEvent.ImageUrlChanged -> {
                 _state.update { it.copy(imagenUrl = event.value) }
+            }
+            is AddGanadoEvent.MadreSeleccionada -> {
+                _state.update { it.copy(
+                    madreSeleccionada = event.madre,
+                    madreId = event.madre?.id
+                ) }
             }
             is AddGanadoEvent.SaveGanado -> saveGanado()
             is AddGanadoEvent.CheckAreteExists -> checkAreteExists()
@@ -178,8 +229,28 @@ class AddGanadoViewModel(
                     color = state.color,
                     fechaNacimiento = state.fechaNacimiento,
                     estado = state.estado,
-                    imagenUrl = state.imagenUrl
+                    imagenUrl = state.imagenUrl,
+                    madreId = state.madreId // Ahora incluimos la madre
                 )
+
+                // Si la cría fue guardada exitosamente y tiene madre, registrar en el historial de crianza
+                if (state.madreId != null && state.tipo in listOf("becerro", "becerra", "torito")) {
+                    try {
+                        // Usamos el CrianzaUseCase desde GanadoUseCase para registrar la crianza
+                        ganadoUseCase.registrarCrianza(
+                            madreId = state.madreId,
+                            criaId = id.toInt(),
+                            fechaNacimiento = state.fechaNacimiento ?: Date()
+                        )
+                    } catch (e: Exception) {
+                        // Si falla el registro de crianza, aún así continuamos (ya se creó el animal)
+                        _state.update {
+                            it.copy(
+                                error = "Animal guardado, pero hubo un error al registrar la relación con la madre: ${e.message}"
+                            )
+                        }
+                    }
+                }
 
                 // Actualizar el estado con el ID del ganado guardado
                 _state.update { it.copy(
@@ -203,11 +274,14 @@ class AddGanadoViewModel(
         }
     }
 
-    class Factory(private val ganadoUseCase: GanadoUseCase) : ViewModelProvider.Factory {
+    class Factory(
+        private val ganadoUseCase: GanadoUseCase,
+        private val madreId: Int? = null
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(AddGanadoViewModel::class.java)) {
-                return AddGanadoViewModel(ganadoUseCase) as T
+                return AddGanadoViewModel(ganadoUseCase, madreId) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -230,7 +304,11 @@ data class AddGanadoState(
     val isLoading: Boolean = false,
     val canSave: Boolean = false,
     val savedGanadoId: Int? = null,
-    val error: String? = null
+    val error: String? = null,
+    val vacasDisponibles: List<GanadoEntity> = emptyList(),
+    val madreSeleccionada: GanadoEntity? = null,
+    val madreId: Int? = null,
+    val mostrarSelectorMadre: Boolean = false
 )
 
 sealed class AddGanadoEvent {
@@ -242,6 +320,7 @@ sealed class AddGanadoEvent {
     data class FechaNacimientoChanged(val value: Date) : AddGanadoEvent()
     data class EstadoChanged(val value: String) : AddGanadoEvent()
     data class ImageUrlChanged(val value: String) : AddGanadoEvent()
+    data class MadreSeleccionada(val madre: GanadoEntity?) : AddGanadoEvent()
     object SaveGanado : AddGanadoEvent()
-    object CheckAreteExists : AddGanadoEvent() // Nuevo evento para verificar arete
+    object CheckAreteExists : AddGanadoEvent()
 }

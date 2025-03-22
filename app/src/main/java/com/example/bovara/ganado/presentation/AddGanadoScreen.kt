@@ -39,6 +39,7 @@ import coil.compose.AsyncImage
 import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.core.utils.ImageUtils
 import com.example.bovara.di.AppModule
+import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ganado.presentation.components.GenderOption
 import com.example.bovara.ganado.presentation.components.StatusOption
 import com.example.bovara.ganado.presentation.components.TypeOption
@@ -48,13 +49,14 @@ import java.util.*
 @Composable
 fun AddGanadoScreen(
     onNavigateBack: () -> Unit,
-    onGanadoAdded: (Int) -> Unit
+    onGanadoAdded: (Int) -> Unit,
+    madreId: Int? = null // ID de la madre si se está registrando una cría desde el perfil de una vaca
 ) {
     val context = LocalContext.current
     val ganadoUseCase = AppModule.provideGanadoUseCase(context)
 
     val viewModel: AddGanadoViewModel = viewModel(
-        factory = AddGanadoViewModel.Factory(ganadoUseCase)
+        factory = AddGanadoViewModel.Factory(ganadoUseCase, madreId)
     )
 
     val state by viewModel.state.collectAsState()
@@ -63,6 +65,7 @@ fun AddGanadoScreen(
 
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showMadreSelector by remember { mutableStateOf(false) }
 
     // Lanzador para la galería de imágenes
     val imagePicker = rememberLauncherForActivityResult(
@@ -328,6 +331,54 @@ fun AddGanadoScreen(
                 )
             }
 
+            // Selector de madre (solo visible si es becerro, becerra o torito)
+            if (state.tipo in listOf("becerro", "becerra", "torito") || state.mostrarSelectorMadre) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Título de sección
+                Text(
+                    text = "Seleccionar Madre",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Campo para mostrar la madre seleccionada o abrir el selector
+                OutlinedTextField(
+                    value = state.madreSeleccionada?.let {
+                        "${it.apodo ?: "Vaca"} (${it.numeroArete})"
+                    } ?: "Seleccionar madre (opcional)",
+                    onValueChange = { /* No editable directamente */ },
+                    readOnly = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showMadreSelector = true },
+                    trailingIcon = {
+                        IconButton(onClick = { showMadreSelector = true }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Seleccionar madre"
+                            )
+                        }
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Female,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                )
+
+                // Si no hay vacas disponibles, mostrar mensaje
+                if (state.vacasDisponibles.isEmpty()) {
+                    Text(
+                        text = "No hay vacas disponibles para seleccionar como madre",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
             // Color del animal
             OutlinedTextField(
                 value = state.color,
@@ -477,6 +528,69 @@ fun AddGanadoScreen(
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    // Dialog para seleccionar madre
+    if (showMadreSelector) {
+        AlertDialog(
+            onDismissRequest = { showMadreSelector = false },
+            title = { Text("Seleccionar Madre") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    // Opción para quitar la selección
+                    ListItem(
+                        headlineContent = { Text("Sin madre") },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            viewModel.onEvent(AddGanadoEvent.MadreSeleccionada(null))
+                            showMadreSelector = false
+                        }
+                    )
+
+                    Divider()
+
+                    // Lista de vacas disponibles
+                    state.vacasDisponibles.forEach { vaca ->
+                        ListItem(
+                            headlineContent = {
+                                Text(vaca.apodo ?: "Vaca sin nombre")
+                            },
+                            supportingContent = {
+                                Text("Arete: ${vaca.numeroArete}")
+                            },
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.Female,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                viewModel.onEvent(AddGanadoEvent.MadreSeleccionada(vaca))
+                                showMadreSelector = false
+                            }
+                        )
+                        Divider()
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMadreSelector = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     // Observar el ID del animal recién creado

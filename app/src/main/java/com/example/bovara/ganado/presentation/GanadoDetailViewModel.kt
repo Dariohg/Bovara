@@ -9,6 +9,7 @@ import com.example.bovara.medicamento.data.model.MedicamentoEntity
 import com.example.bovara.medicamento.domain.MedicamentoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -54,6 +55,16 @@ class GanadoDetailViewModel(
                             error = null
                         )
                     }
+
+                    // Si el animal tiene madre, cargarla
+                    ganado?.madreId?.let { madreId ->
+                        loadMadre(madreId)
+                    }
+
+                    // Si el animal es una vaca, cargar sus crías
+                    if (ganado?.tipo == "vaca") {
+                        loadCrias(ganado.id)
+                    }
                 }
             } catch (e: Exception) {
                 _state.update {
@@ -61,6 +72,37 @@ class GanadoDetailViewModel(
                         isLoading = false,
                         error = e.message ?: "Error al cargar los datos del animal"
                     )
+                }
+            }
+        }
+    }
+
+    private fun loadMadre(madreId: Int) {
+        viewModelScope.launch {
+            try {
+                ganadoUseCase.getGanadoById(madreId).collectLatest { madre ->
+                    _state.update {
+                        it.copy(madre = madre)
+                    }
+                }
+            } catch (e: Exception) {
+                // Si falla la carga de la madre, simplemente dejamos el valor como null
+            }
+        }
+    }
+
+    private fun loadCrias(vacaId: Int) {
+        viewModelScope.launch {
+            try {
+                ganadoUseCase.getCriasByMadreId(vacaId).collectLatest { crias ->
+                    _state.update {
+                        it.copy(crias = crias)
+                    }
+                }
+            } catch (e: Exception) {
+                // Si falla la carga de crías, actualizamos el estado con lista vacía
+                _state.update {
+                    it.copy(crias = emptyList())
                 }
             }
         }
@@ -102,6 +144,8 @@ class GanadoDetailViewModel(
 
 data class GanadoDetailState(
     val ganado: GanadoEntity? = null,
+    val madre: GanadoEntity? = null,
+    val crias: List<GanadoEntity> = emptyList(),
     val vacunasRecientes: List<MedicamentoEntity> = emptyList(),
     val isLoading: Boolean = false,
     val isDeleted: Boolean = false,

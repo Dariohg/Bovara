@@ -67,8 +67,18 @@ fun NavigationWrapper() {
             )
         }
 
-        // Agregar Ganado
-        composable(route = Screens.ADD_GANADO) {
+        // Agregar Ganado (ahora con soporte para madreId)
+        composable(
+            route = "${Screens.ADD_GANADO}?madreId={madreId}",
+            arguments = listOf(
+                navArgument("madreId") {
+                    type = NavType.IntType
+                    defaultValue = -1 // -1 significa sin madre
+                }
+            )
+        ) { backStackEntry ->
+            val madreId = backStackEntry.arguments?.getInt("madreId") ?: -1
+
             AddGanadoScreen(
                 onNavigateBack = {
                     navController.popBackStack()
@@ -79,11 +89,12 @@ fun NavigationWrapper() {
                         // Eliminar la pantalla de agregar ganado del backstack
                         popUpTo(Screens.ADD_GANADO) { inclusive = true }
                     }
-                }
+                },
+                madreId = if (madreId != -1) madreId else null
             )
         }
 
-        // Detalle de Ganado
+        // Detalle de Ganado (con información de madre y crías)
         composable(
             route = "${Screens.GANADO_DETAIL}/{ganadoId}",
             arguments = listOf(
@@ -110,6 +121,14 @@ fun NavigationWrapper() {
                 },
                 onNavigateToAddVacuna = { id ->
                     navController.navigate("${Screens.ADD_VACUNA}/$id")
+                },
+                onGanadoClick = { id ->
+                    // Para navegar a otra ficha de ganado (madre o cría)
+                    navController.navigate("${Screens.GANADO_DETAIL}/$id")
+                },
+                onNavigateToAddCria = { madreId ->
+                    // Navegar a la pantalla de agregar ganado con la madre preseleccionada
+                    navController.navigate("${Screens.ADD_GANADO}?madreId=$madreId")
                 }
             )
         }
