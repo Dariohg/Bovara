@@ -17,6 +17,12 @@ class GanadoRepository(private val ganadoDao: GanadoDao) {
 
     fun searchGanado(query: String): Flow<List<GanadoEntity>> = ganadoDao.searchGanado(query)
 
+    // Método para verificar si un número de arete ya existe
+    suspend fun countByNumeroArete(numeroArete: String): Int = ganadoDao.countByNumeroArete(numeroArete)
+
+    // Método para obtener un animal por número de arete
+    suspend fun getGanadoByNumeroArete(numeroArete: String): GanadoEntity? = ganadoDao.getGanadoByNumeroArete(numeroArete)
+
     suspend fun insertGanado(ganado: GanadoEntity): Long = ganadoDao.insertGanado(ganado)
 
     suspend fun updateGanado(ganado: GanadoEntity) = ganadoDao.updateGanado(ganado)

@@ -3,6 +3,7 @@ package com.example.bovara.ganado.domain
 import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ganado.data.repository.GanadoRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.util.Date
 
 class GanadoUseCase(private val repository: GanadoRepository) {
@@ -17,6 +18,15 @@ class GanadoUseCase(private val repository: GanadoRepository) {
     fun getCriasByMadreId(madreId: Int): Flow<List<GanadoEntity>> = repository.getCriasByMadreId(madreId)
 
     fun searchGanado(query: String): Flow<List<GanadoEntity>> = repository.searchGanado(query)
+
+    /**
+     * Verifica si un número de arete ya existe en la base de datos
+     * @param numeroArete el número de arete a verificar
+     * @return true si el arete ya existe, false en caso contrario
+     */
+    suspend fun areteExists(numeroArete: String): Boolean {
+        return repository.countByNumeroArete(numeroArete) > 0
+    }
 
     suspend fun saveGanado(
         id: Int = 0,
@@ -35,6 +45,11 @@ class GanadoUseCase(private val repository: GanadoRepository) {
         // Validación del formato de arete (siempre inicia con 07 seguido de 8 números)
         require(numeroArete.matches(Regex("^07\\d{8}$"))) {
             "El número de arete debe iniciar con 07 seguido de 8 dígitos"
+        }
+
+        // Comprobar que el arete no exista ya (si es un nuevo registro)
+        if (id == 0 && areteExists(numeroArete)) {
+            throw IllegalArgumentException("El número de arete ya existe")
         }
 
         // Validación del sexo

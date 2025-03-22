@@ -54,6 +54,7 @@ class AddGanadoViewModel(
                 _state.update { it.copy(imagenUrl = event.value) }
             }
             is AddGanadoEvent.SaveGanado -> saveGanado()
+            is AddGanadoEvent.CheckAreteExists -> checkAreteExists()
         }
     }
 
@@ -65,6 +66,39 @@ class AddGanadoViewModel(
             else -> null
         }
         _state.update { it.copy(numeroAreteError = error) }
+    }
+
+    private fun checkAreteExists() {
+        val numeroArete = _state.value.numeroArete
+
+        // No verificar si ya hay un error de formato o está vacío
+        if (numeroArete.isBlank() || _state.value.numeroAreteError != null) {
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val exists = ganadoUseCase.areteExists(numeroArete)
+                if (exists) {
+                    _state.update {
+                        it.copy(
+                            numeroAreteError = "Este número de arete ya está registrado",
+                            canSave = false
+                        )
+                    }
+                } else {
+                    _state.update {
+                        it.copy(numeroAreteError = null)
+                    }
+                    checkCanSave()
+                }
+            } catch (e: Exception) {
+                // Manejar errores de consulta si ocurren
+                _state.update {
+                    it.copy(error = "Error al verificar el número de arete: ${e.message}")
+                }
+            }
+        }
     }
 
     private fun validateSexo() {
@@ -123,6 +157,18 @@ class AddGanadoViewModel(
 
         viewModelScope.launch {
             try {
+                // Verificar una última vez que el arete no exista
+                if (ganadoUseCase.areteExists(state.numeroArete)) {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            numeroAreteError = "Este número de arete ya está registrado",
+                            canSave = false
+                        )
+                    }
+                    return@launch
+                }
+
                 // Llamar al caso de uso para guardar el ganado
                 val id = ganadoUseCase.saveGanado(
                     numeroArete = state.numeroArete,
@@ -142,10 +188,16 @@ class AddGanadoViewModel(
                     error = null
                 )}
             } catch (e: Exception) {
+                // Detectar si el error es específicamente por arete duplicado
+                val errorMessage = e.message ?: "Error al guardar el ganado"
+                val isAreteError = errorMessage.contains("arete ya existe", ignoreCase = true)
+
                 // Actualizar el estado con el error
                 _state.update { it.copy(
                     isLoading = false,
-                    error = e.message ?: "Error al guardar el ganado"
+                    error = errorMessage,
+                    numeroAreteError = if (isAreteError) "Este número de arete ya está registrado" else null,
+                    canSave = !isAreteError
                 )}
             }
         }
@@ -191,4 +243,5 @@ sealed class AddGanadoEvent {
     data class EstadoChanged(val value: String) : AddGanadoEvent()
     data class ImageUrlChanged(val value: String) : AddGanadoEvent()
     object SaveGanado : AddGanadoEvent()
+    object CheckAreteExists : AddGanadoEvent() // Nuevo evento para verificar arete
 }

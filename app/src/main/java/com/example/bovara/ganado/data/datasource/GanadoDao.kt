@@ -24,6 +24,12 @@ interface GanadoDao {
     @Query("SELECT * FROM ganado WHERE apodo LIKE '%' || :query || '%' OR numeroArete LIKE '%' || :query || '%'")
     fun searchGanado(query: String): Flow<List<GanadoEntity>>
 
+    @Query("SELECT COUNT(*) FROM ganado WHERE numeroArete = :numeroArete")
+    suspend fun countByNumeroArete(numeroArete: String): Int
+
+    @Query("SELECT * FROM ganado WHERE numeroArete = :numeroArete LIMIT 1")
+    suspend fun getGanadoByNumeroArete(numeroArete: String): GanadoEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGanado(ganado: GanadoEntity): Long
 
