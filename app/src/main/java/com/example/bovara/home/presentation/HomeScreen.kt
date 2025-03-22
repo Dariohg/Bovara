@@ -1,5 +1,3 @@
-// app/src/main/java/com/example/bovara/home/presentation/HomeScreen.kt
-
 package com.example.bovara.home.presentation
 
 import androidx.compose.animation.AnimatedVisibility
@@ -19,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.HealthAndSafety
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,7 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.bovara.R
 import com.example.bovara.core.utils.DateUtils
@@ -52,7 +51,7 @@ fun HomeScreen(
     onNavigateToAddGanado: () -> Unit,
     onNavigateToVacunas: () -> Unit,
     onGanadoClick: (Int) -> Unit,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel
 ) {
     val ganado by viewModel.ganado.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -78,14 +77,14 @@ fun HomeScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToAddGanado,
-                containerColor = MaterialTheme.colorScheme.primary,
+                containerColor = Color(0xFF4CAF50),
+                contentColor = Color.White,
                 elevation = FloatingActionButtonDefaults.elevation(8.dp),
                 shape = CircleShape
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "Agregar Animal",
-                    tint = Color.White
+                    contentDescription = "Agregar Animal"
                 )
             }
         }
@@ -96,7 +95,7 @@ fun HomeScreen(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Color(0xFF4CAF50),
                     modifier = Modifier.size(48.dp)
                 )
             }
@@ -119,7 +118,7 @@ fun HomeScreen(
                         value = searchQuery,
                         onValueChange = { viewModel.updateSearchQuery(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Buscar por número de arete o nombre...") },
+                        placeholder = { Text("Buscar por número de arete") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Search,
@@ -166,7 +165,7 @@ fun HomeScreen(
                             CategoryCard(
                                 title = "Vacas",
                                 count = ganado.count { it.tipo == "vaca" },
-                                iconRes = R.drawable.icon_cow,
+                                iconRes = R.drawable.ic_cow, // Este parámetro ya no se usa
                                 onClick = {
                                     viewModel.filterByType("vaca")
                                     onNavigateToGanado()
@@ -177,7 +176,7 @@ fun HomeScreen(
                             CategoryCard(
                                 title = "Toros",
                                 count = ganado.count { it.tipo == "toro" },
-                                iconRes = R.drawable.icon_bull,
+                                iconRes = R.drawable.ic_bull, // Este parámetro ya no se usa
                                 onClick = {
                                     viewModel.filterByType("toro")
                                     onNavigateToGanado()
@@ -188,7 +187,7 @@ fun HomeScreen(
                             CategoryCard(
                                 title = "Becerros",
                                 count = ganado.count { it.tipo.contains("becer", ignoreCase = true) },
-                                iconRes = R.drawable.icon_cow,
+                                iconRes = R.drawable.ic_cow, // Este parámetro ya no se usa
                                 onClick = {
                                     viewModel.filterByType("becerro")
                                     onNavigateToGanado()
@@ -198,48 +197,9 @@ fun HomeScreen(
                     }
                 }
 
-                // Acciones rápidas
+                // Acciones rápidas - Reemplazado por VaccinationCard
                 item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onNavigateToVacunas),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.icon_vaccine),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(40.dp)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Vacunas programadas",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                                Text(
-                                    text = "Administrar vacunaciones para todo el ganado",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Rounded.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
+                    VaccinationCard(onClick = onNavigateToVacunas)
                 }
 
                 // Sección de Ganado Reciente
@@ -278,75 +238,63 @@ fun HomeScreen(
 
 @Composable
 fun StatsCard(ganado: List<GanadoEntity>) {
-    Card(
+    // Eliminamos la Card y usamos directamente un Box con sombra y fondo degradado
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(160.dp)
-            .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        )
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Gradient background
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
-                            ),
-                            start = Offset(0f, 0f),
-                            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                        )
-                    )
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(16.dp)
             )
-
-            // Content
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Resumen de Ganado",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0xFF4CAF50),  // Verde más vivo
+                        Color(0xFFFFC107)   // Ámbar más vivo
                     )
                 )
+            )
+    ) {
+        // Content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Resumen de Ganado",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    StatItem(
-                        title = "Total",
-                        value = ganado.size.toString(),
-                        iconContentDescription = "Total de ganado"
-                    )
-                    StatItem(
-                        title = "Activos",
-                        value = ganado.count { it.estado == "activo" }.toString(),
-                        iconContentDescription = "Ganado activo"
-                    )
-                    StatItem(
-                        title = "Ventas",
-                        value = ganado.count { it.estado == "vendido" }.toString(),
-                        iconContentDescription = "Ganado vendido"
-                    )
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatItem(
+                    title = "Total",
+                    value = ganado.size.toString(),
+                    iconContentDescription = "Total de ganado"
+                )
+                StatItem(
+                    title = "Activos",
+                    value = ganado.count { it.estado == "activo" }.toString(),
+                    iconContentDescription = "Ganado activo"
+                )
+                StatItem(
+                    title = "Ventas",
+                    value = ganado.count { it.estado == "vendido" }.toString(),
+                    iconContentDescription = "Ganado vendido"
+                )
             }
         }
     }
 }
-
 @Composable
 fun StatItem(
     title: String,
@@ -387,7 +335,7 @@ fun SectionHeader(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = Color(0xFF4CAF50),
             modifier = Modifier.size(24.dp)
         )
 
@@ -407,13 +355,13 @@ fun SectionHeader(
             ) {
                 Text(
                     text = actionText,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Color(0xFF4CAF50),
                     fontWeight = FontWeight.SemiBold
                 )
                 Icon(
                     imageVector = Icons.Rounded.ChevronRight,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = Color(0xFF4CAF50)
                 )
             }
         }
@@ -433,9 +381,8 @@ fun CategoryCard(
             .height(120.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier
@@ -444,10 +391,15 @@ fun CategoryCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // En lugar de usar el icono problemático, usamos un icono del sistema
             Icon(
-                painter = painterResource(id = iconRes),
+                imageVector = when (title) {
+                    "Vacas" -> Icons.Rounded.Female
+                    "Toros" -> Icons.Rounded.Male
+                    else -> Icons.Rounded.Pets // Para Becerros
+                },
                 contentDescription = title,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = Color(0xFF4CAF50), // Verde más vivo
                 modifier = Modifier.size(40.dp)
             )
 
@@ -465,8 +417,56 @@ fun CategoryCard(
                 text = count.toString(),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = Color(0xFF4CAF50) // Verde más vivo
                 )
+            )
+        }
+    }
+}
+
+@Composable
+fun VaccinationCard(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Usamos un icono del sistema en lugar del drawable personalizado
+            Icon(
+                imageVector = Icons.Outlined.HealthAndSafety,
+                contentDescription = null,
+                tint = Color(0xFF4CAF50),
+                modifier = Modifier.size(40.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Vacunas programadas",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Text(
+                    text = "Administrar vacunaciones para todo el ganado",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = Color(0xFF4CAF50)
             )
         }
     }

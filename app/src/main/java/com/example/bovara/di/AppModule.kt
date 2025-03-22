@@ -1,8 +1,6 @@
 package com.example.bovara.di
 
 import android.content.Context
-import androidx.test.espresso.core.internal.deps.dagger.Module
-import androidx.test.espresso.core.internal.deps.dagger.Provides
 import com.example.bovara.core.database.AppDatabase
 import com.example.bovara.crianza.data.repository.CrianzaRepository
 import com.example.bovara.crianza.domain.CrianzaUseCase
@@ -10,59 +8,70 @@ import com.example.bovara.ganado.data.repository.GanadoRepository
 import com.example.bovara.ganado.domain.GanadoUseCase
 import com.example.bovara.medicamento.data.repository.MedicamentoRepository
 import com.example.bovara.medicamento.domain.MedicamentoUseCase
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 
-@Module
-@InstallIn(SingletonComponent::class)
+/**
+ * Clase de utilidad para proporcionar las dependencias de la aplicación.
+ * Esta versión reemplaza el módulo Dagger/Hilt con un enfoque más simple.
+ */
 object AppModule {
 
-    @Provides
-    @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return AppDatabase.getDatabase(context)
+    // Singleton de la base de datos
+    private var appDatabase: AppDatabase? = null
+
+    /**
+     * Proporciona la instancia de la base de datos de la aplicación
+     */
+    fun provideAppDatabase(context: Context): AppDatabase {
+        return appDatabase ?: synchronized(this) {
+            appDatabase ?: AppDatabase.getDatabase(context).also {
+                appDatabase = it
+            }
+        }
     }
 
-    // Ganado
-    @Provides
-    @Singleton
-    fun provideGanadoRepository(database: AppDatabase): GanadoRepository {
-        return GanadoRepository(database.ganadoDao())
+    /**
+     * Proporciona el repositorio de ganado
+     */
+    fun provideGanadoRepository(context: Context): GanadoRepository {
+        return GanadoRepository(provideAppDatabase(context).ganadoDao())
     }
 
-    @Provides
-    @Singleton
-    fun provideGanadoUseCase(repository: GanadoRepository): GanadoUseCase {
-        return GanadoUseCase(repository)
+    /**
+     * Proporciona el caso de uso de ganado
+     */
+    fun provideGanadoUseCase(context: Context): GanadoUseCase {
+        return GanadoUseCase(provideGanadoRepository(context))
     }
 
-    // Medicamento
-    @Provides
-    @Singleton
-    fun provideMedicamentoRepository(database: AppDatabase): MedicamentoRepository {
-        return MedicamentoRepository(database.medicamentoDao())
+    /**
+     * Proporciona el repositorio de medicamentos
+     */
+    fun provideMedicamentoRepository(context: Context): MedicamentoRepository {
+        return MedicamentoRepository(provideAppDatabase(context).medicamentoDao())
     }
 
-    @Provides
-    @Singleton
-    fun provideMedicamentoUseCase(repository: MedicamentoRepository): MedicamentoUseCase {
-        return MedicamentoUseCase(repository)
+    /**
+     * Proporciona el caso de uso de medicamentos
+     */
+    fun provideMedicamentoUseCase(context: Context): MedicamentoUseCase {
+        return MedicamentoUseCase(provideMedicamentoRepository(context))
     }
 
-    // Crianza
-    @Provides
-    @Singleton
-    fun provideCrianzaRepository(database: AppDatabase): CrianzaRepository {
-        return CrianzaRepository(database.crianzaDao())
+    /**
+     * Proporciona el repositorio de crianza
+     */
+    fun provideCrianzaRepository(context: Context): CrianzaRepository {
+        return CrianzaRepository(provideAppDatabase(context).crianzaDao())
     }
 
-    @Provides
-    @Singleton
-    fun provideCrianzaUseCase(repository: CrianzaRepository): CrianzaUseCase {
-        return CrianzaUseCase(repository)
+    /**
+     * Proporciona el caso de uso de crianza
+     */
+    fun provideCrianzaUseCase(context: Context): CrianzaUseCase {
+        // Aquí necesitamos el GanadoUseCase para CrianzaUseCase
+        return CrianzaUseCase(
+            provideCrianzaRepository(context),
+            provideGanadoUseCase(context)
+        )
     }
 }
