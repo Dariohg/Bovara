@@ -31,7 +31,6 @@ fun NavigationWrapper() {
 
     NavHost(navController = navController, startDestination = Screens.HOME) {
         // Home/Dashboard
-        // En NavigationWrapper.kt
         composable(route = Screens.HOME) {
             // Obtener las dependencias necesarias
             val ganadoUseCase = AppModule.provideGanadoUseCase(context)
@@ -41,7 +40,6 @@ fun NavigationWrapper() {
                 factory = HomeViewModel.Factory(ganadoUseCase)
             )
 
-            // En NavigationWrapper.kt - el composable de HOME
             HomeScreen(
                 onNavigateToGanadoByCategory = {
                     navController.navigate(Screens.GANADO_LIST_BY_CATEGORY)
@@ -62,7 +60,9 @@ fun NavigationWrapper() {
                     navController.navigate("${Screens.GANADO_DETAIL}/$ganadoId")
                 },
                 onNavigateToSearchResults = { query ->
-                    navController.navigate("${Screens.GANADO_LIST_BY_CATEGORY}?query=$query")                },
+                    // Pasar la consulta como argumento de navegación
+                    navController.navigate("${Screens.GANADO_LIST_BY_CATEGORY}?query=$query")
+                },
                 viewModel = homeViewModel
             )
         }
@@ -135,24 +135,6 @@ fun NavigationWrapper() {
             )
         }
 
-        // Aquí podrías agregar más rutas para otras pantallas de la aplicación
-
-        // Placeholder para la lista de ganado (aún no implementada)
-        composable(route = Screens.GANADO_LIST) {
-            // Placeholder - regresa a la pantalla de inicio
-            LaunchedEffect(Unit) {
-                navController.popBackStack()
-            }
-        }
-
-        // Placeholder para la pantalla de vacunación (aún no implementada)
-        composable(route = Screens.BATCH_VACCINATION) {
-            // Placeholder - regresa a la pantalla de inicio
-            LaunchedEffect(Unit) {
-                navController.popBackStack()
-            }
-        }
-
         // Historial de vacunas de un animal específico
         composable(
             route = "${Screens.VACUNAS_GANADO}/{ganadoId}",
@@ -192,8 +174,6 @@ fun NavigationWrapper() {
                 }
             )
         }
-
-
 
         // Historial de vacunaciones
         composable(route = Screens.VACCINATION_HISTORY) {
@@ -264,6 +244,8 @@ fun NavigationWrapper() {
                 navController.currentBackStackEntry?.savedStateHandle?.remove<Int>("selected_medicamento_id")
             }
         }
+
+        // Ruta para lista de ganado por categoría con parámetro de búsqueda opcional
         composable(
             route = "${Screens.GANADO_LIST_BY_CATEGORY}?query={query}",
             arguments = listOf(
@@ -288,7 +270,7 @@ fun NavigationWrapper() {
             )
         }
 
-
+        // Ruta para lista de ganado por fecha con parámetro de búsqueda opcional
         composable(
             route = "${Screens.GANADO_LIST_BY_DATE}?query={query}",
             arguments = listOf(
@@ -313,25 +295,12 @@ fun NavigationWrapper() {
             )
         }
 
-        composable(
-            route = Screens.GANADO_SEARCH,
-            arguments = listOf(
-                navArgument("query") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val searchQuery = backStackEntry.arguments?.getString("query") ?: ""
-
-            GanadoListScreen(
-                mode = GanadoListMode.BY_CATEGORY,
-                initialSearchQuery = searchQuery,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onGanadoClick = { ganadoId ->
-                    navController.navigate("${Screens.GANADO_DETAIL}/$ganadoId")
-                }
-            )
+        // Ruta placeholder para la lista de ganado
+        composable(route = Screens.GANADO_LIST) {
+            // Placeholder - regresa a la pantalla de inicio
+            LaunchedEffect(Unit) {
+                navController.popBackStack()
+            }
         }
-
     }
 }

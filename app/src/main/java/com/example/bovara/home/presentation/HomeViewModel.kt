@@ -45,7 +45,7 @@ class HomeViewModel(
         viewModelScope.launch {
             combine(searchQuery, ganado) { query, ganadoList ->
                 if (query.isBlank()) {
-                    ganadoList
+                    emptyList()
                 } else {
                     ganadoList.filter {
                         it.numeroArete.contains(query, ignoreCase = true) ||
@@ -78,5 +78,15 @@ class HomeViewModel(
     fun clearSearch() {
         _searchQuery.value = ""
         _isSearchActive.value = false
+    }
+
+    class Factory(private val ganadoUseCase: GanadoUseCase) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
+                return HomeViewModel(ganadoUseCase) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
     }
 }
