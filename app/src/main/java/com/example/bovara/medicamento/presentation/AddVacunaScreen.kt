@@ -1,4 +1,3 @@
-// File: app/src/main/java/com/example/bovara/medicamento/presentation/AddVacunaScreen.kt
 package com.example.bovara.medicamento.presentation
 
 import androidx.compose.foundation.BorderStroke
@@ -50,6 +49,12 @@ fun AddVacunaScreen(
     val scrollState = rememberScrollState()
 
     var showDatePicker by remember { mutableStateOf(false) }
+
+    // Al iniciar la pantalla, asegurarse de que esté marcado como aplicado y no programado
+    LaunchedEffect(key1 = Unit) {
+        viewModel.onEvent(AddVacunaEvent.AplicadoChanged(true))
+        viewModel.onEvent(AddVacunaEvent.EsProgramadoChanged(false))
+    }
 
     Scaffold(
         topBar = {
@@ -218,100 +223,41 @@ fun AddVacunaScreen(
                 )
             )
 
-            // Fecha de aplicación o programación
+            // Opción única: Ya aplicada (sin opción de programación)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 8.dp)
-                ) {
-                    Checkbox(
-                        checked = state.aplicado,
-                        onCheckedChange = { viewModel.onEvent(AddVacunaEvent.AplicadoChanged(it)) }
-                    )
-
-                    Text("Ya aplicada")
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 8.dp)
-                ) {
-                    Checkbox(
-                        checked = state.esProgramado,
-                        onCheckedChange = { viewModel.onEvent(AddVacunaEvent.EsProgramadoChanged(it)) }
-                    )
-
-                    Text("Programada")
-                }
+                Text(
+                    text = "Fecha de aplicación",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
-            if (state.aplicado) {
-                // Fecha de aplicación si ya fue aplicada
-                OutlinedTextField(
-                    value = state.fechaAplicacion?.let { DateUtils.formatDate(it) } ?: "",
-                    onValueChange = { /* No editable directamente */ },
-                    label = { Text("Fecha de Aplicación") },
-                    readOnly = true,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = null
-                        )
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { showDatePicker = true }) {
-                            Icon(
-                                imageVector = Icons.Default.DateRange,
-                                contentDescription = "Seleccionar fecha"
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else if (state.esProgramado) {
-                // Fecha programada para aplicación futura
-                OutlinedTextField(
-                    value = state.fechaProgramada?.let { DateUtils.formatDate(it) } ?: "",
-                    onValueChange = { /* No editable directamente */ },
-                    label = { Text("Fecha Programada") },
-                    readOnly = true,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = null
-                        )
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { showDatePicker = true }) {
-                            Icon(
-                                imageVector = Icons.Default.DateRange,
-                                contentDescription = "Seleccionar fecha"
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Opción para recordatorio
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                ) {
-                    Checkbox(
-                        checked = state.recordatorio,
-                        onCheckedChange = { viewModel.onEvent(AddVacunaEvent.RecordatorioChanged(it)) }
+            // Fecha de aplicación obligatoria
+            OutlinedTextField(
+                value = state.fechaAplicacion?.let { DateUtils.formatDate(it) } ?: "",
+                onValueChange = { /* No editable directamente */ },
+                label = { Text("Fecha de Aplicación") },
+                readOnly = true,
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.CalendarMonth,
+                        contentDescription = null
                     )
-
-                    Text("Crear recordatorio")
-                }
-            }
+                },
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Seleccionar fecha"
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
 
             // Notas adicionales (opcional)
             OutlinedTextField(
@@ -364,14 +310,8 @@ fun AddVacunaScreen(
 
     // Date picker dialog
     if (showDatePicker) {
-        val dateToShow = when {
-            state.aplicado && state.fechaAplicacion != null -> state.fechaAplicacion
-            state.esProgramado && state.fechaProgramada != null -> state.fechaProgramada
-            else -> Date()
-        }
-
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = dateToShow?.time
+            initialSelectedDateMillis = state.fechaAplicacion?.time ?: System.currentTimeMillis()
         )
 
         DatePickerDialog(
@@ -381,11 +321,7 @@ fun AddVacunaScreen(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
                             val date = Date(millis)
-                            if (state.aplicado) {
-                                viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(date))
-                            } else if (state.esProgramado) {
-                                viewModel.onEvent(AddVacunaEvent.FechaProgramadaChanged(date))
-                            }
+                            viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(date))
                         }
                         showDatePicker = false
                     }

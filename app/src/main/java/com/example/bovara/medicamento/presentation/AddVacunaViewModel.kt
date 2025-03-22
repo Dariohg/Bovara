@@ -1,4 +1,3 @@
-// File: app/src/main/java/com/example/bovara/medicamento/presentation/AddVacunaViewModel.kt
 package com.example.bovara.medicamento.presentation
 
 import androidx.lifecycle.ViewModel
@@ -24,11 +23,12 @@ class AddVacunaViewModel(
     init {
         loadGanadoInfo()
 
-        // Valores por defecto
+        // Valores por defecto para registro individual de vacunas
         _state.update { it.copy(
             tipo = "vacuna",
-            aplicado = true,
-            fechaAplicacion = Date()
+            aplicado = true,          // Siempre es aplicado para vacunas individuales
+            esProgramado = false,     // Nunca es programado para vacunas individuales
+            fechaAplicacion = Date()  // Fecha actual por defecto
         )}
 
         checkCanSave()
@@ -155,7 +155,8 @@ class AddVacunaViewModel(
                 state.descripcion.isNotBlank() &&
                 state.descripcionError == null &&
                 dosisValid &&
-                state.dosisMLError == null
+                state.dosisMLError == null &&
+                (state.aplicado && state.fechaAplicacion != null)
 
         _state.update { it.copy(canSave = canSave) }
     }
@@ -178,10 +179,8 @@ class AddVacunaViewModel(
                     dosisML = dosis,
                     ganadoId = ganadoId,
                     tipo = state.tipo,
-                    esProgramado = state.esProgramado,
-                    aplicado = state.aplicado,
-                    fechaProgramada = if (state.esProgramado) state.fechaProgramada else null,
-                    recordatorio = if (state.esProgramado) state.recordatorio else false,
+                    esProgramado = false, // Nunca es programado para vacunas individuales
+                    aplicado = true, // Siempre es aplicado para vacunas individuales
                     notas = state.notas.takeIf { it.isNotBlank() }
                 )
 
@@ -230,9 +229,9 @@ data class AddVacunaState(
     val dosisML: String = "",
     val dosisMLError: String? = null,
     val ganadoInfo: Pair<String?, String>? = null,
-    val aplicado: Boolean = false,
+    val aplicado: Boolean = true,
     val esProgramado: Boolean = false,
-    val fechaAplicacion: Date? = null,
+    val fechaAplicacion: Date? = Date(),
     val fechaProgramada: Date? = null,
     val recordatorio: Boolean = false,
     val notas: String = "",
