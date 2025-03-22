@@ -18,7 +18,7 @@ import com.example.bovara.crianza.data.model.CrianzaEntity
         MedicamentoEntity::class,
         CrianzaEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

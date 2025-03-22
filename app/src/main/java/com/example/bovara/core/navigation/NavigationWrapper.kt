@@ -15,6 +15,11 @@ import com.example.bovara.ganado.presentation.EditGanadoScreen
 import com.example.bovara.ganado.presentation.GanadoDetailScreen
 import com.example.bovara.home.presentation.HomeScreen
 import com.example.bovara.home.presentation.HomeViewModel
+import com.example.bovara.medicamento.presentation.AddVacunaScreen
+import com.example.bovara.medicamento.presentation.BatchDetailScreen
+import com.example.bovara.medicamento.presentation.BatchVaccinationScreen
+import com.example.bovara.medicamento.presentation.VaccinationHistoryScreen
+import com.example.bovara.medicamento.presentation.VacunasGanadoScreen
 
 @Composable
 fun NavigationWrapper() {
@@ -84,9 +89,14 @@ fun NavigationWrapper() {
                 },
                 onNavigateHome = {
                     navController.navigate(Screens.HOME) {
-                        // Eliminar todas las pantallas anteriores del backstack
                         popUpTo(Screens.HOME) { inclusive = true }
                     }
+                },
+                onNavigateToVacunas = { id ->
+                    navController.navigate("${Screens.VACUNAS_GANADO}/$id")
+                },
+                onNavigateToAddVacuna = { id ->
+                    navController.navigate("${Screens.ADD_VACUNA}/$id")
                 }
             )
         }
@@ -128,6 +138,90 @@ fun NavigationWrapper() {
             LaunchedEffect(Unit) {
                 navController.popBackStack()
             }
+        }
+
+        // Historial de vacunas de un animal específico
+        composable(
+            route = "${Screens.VACUNAS_GANADO}/{ganadoId}",
+            arguments = listOf(
+                navArgument("ganadoId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val ganadoId = backStackEntry.arguments?.getInt("ganadoId") ?: 0
+
+            VacunasGanadoScreen(
+                ganadoId = ganadoId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onAddVacuna = { id ->
+                    navController.navigate("${Screens.ADD_VACUNA}/$id")
+                }
+            )
+        }
+
+        // Agregar vacuna a un animal específico
+        composable(
+            route = "${Screens.ADD_VACUNA}/{ganadoId}",
+            arguments = listOf(
+                navArgument("ganadoId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val ganadoId = backStackEntry.arguments?.getInt("ganadoId") ?: 0
+
+            AddVacunaScreen(
+                ganadoId = ganadoId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onVacunaAdded = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Vacunación por lotes
+        composable(route = Screens.BATCH_VACCINATION) {
+            BatchVaccinationScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onFinishVaccination = {
+                    // Navegar al historial después de completar
+                    navController.navigate(Screens.VACCINATION_HISTORY) {
+                        popUpTo(Screens.BATCH_VACCINATION) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Historial de vacunaciones
+        composable(route = Screens.VACCINATION_HISTORY) {
+            VaccinationHistoryScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToBatchDetail = { lote ->
+                    navController.navigate("${Screens.BATCH_DETAIL}/$lote")
+                }
+            )
+        }
+
+        // Detalle de un lote de vacunación
+        composable(
+            route = "${Screens.BATCH_DETAIL}/{lote}",
+            arguments = listOf(
+                navArgument("lote") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val lote = backStackEntry.arguments?.getString("lote") ?: ""
+
+            BatchDetailScreen(
+                lote = lote,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

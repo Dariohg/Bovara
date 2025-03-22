@@ -12,14 +12,26 @@ class MedicamentoRepository(private val medicamentoDao: MedicamentoDao) {
     fun getMedicamentoById(id: Int): Flow<MedicamentoEntity?> =
         medicamentoDao.getMedicamentoById(id)
 
-    fun getMedicamentosProgramados(): Flow<List<MedicamentoEntity>> =
-        medicamentoDao.getMedicamentosProgramados()
+    fun getMedicamentosProgramadosPendientes(): Flow<List<MedicamentoEntity>> =
+        medicamentoDao.getMedicamentosProgramadosPendientes()
+
+    fun getMedicamentosAplicados(): Flow<List<MedicamentoEntity>> =
+        medicamentoDao.getMedicamentosAplicados()
+
+    fun getMedicamentosByTipo(tipo: String): Flow<List<MedicamentoEntity>> =
+        medicamentoDao.getMedicamentosByTipo(tipo)
+
+    fun getMedicamentosByLote(lote: String): Flow<List<MedicamentoEntity>> =
+        medicamentoDao.getMedicamentosByLote(lote)
 
     fun getMedicamentosByRangoDeFechas(inicio: Date, fin: Date): Flow<List<MedicamentoEntity>> =
         medicamentoDao.getMedicamentosByRangoDeFechas(inicio, fin)
 
     suspend fun insertMedicamento(medicamento: MedicamentoEntity): Long =
         medicamentoDao.insertMedicamento(medicamento)
+
+    suspend fun insertMedicamentos(medicamentos: List<MedicamentoEntity>): List<Long> =
+        medicamentoDao.insertMedicamentos(medicamentos)
 
     suspend fun updateMedicamento(medicamento: MedicamentoEntity) =
         medicamentoDao.updateMedicamento(medicamento)

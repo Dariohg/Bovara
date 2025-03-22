@@ -43,6 +43,10 @@ import com.example.bovara.R
 import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ui.theme.AccentGreen
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import com.example.bovara.core.utils.ImageUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -477,6 +481,8 @@ fun GanadoListItem(
     ganado: GanadoEntity,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -495,23 +501,40 @@ fun GanadoListItem(
                 modifier = Modifier
                     .size(60.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
             ) {
                 if (ganado.imagenUrl != null) {
-                    AsyncImage(
-                        model = ganado.imagenUrl,
-                        contentDescription = "Foto de ${ganado.apodo ?: "animal"}",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    // Cargar imagen desde el almacenamiento interno si existe
+                    val bitmap = remember(ganado.imagenUrl) {
+                        ImageUtils.loadImageFromInternalStorage(context, ganado.imagenUrl)
+                    }
+
+                    if (bitmap != null) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Foto de ${ganado.apodo ?: "animal"}",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // Mostrar ícono si no se pudo cargar la imagen
+                        Icon(
+                            imageVector = if (ganado.sexo == "macho") Icons.Rounded.Male else Icons.Rounded.Female,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(30.dp)
+                        )
+                    }
                 } else {
+                    // Mostrar ícono si no hay imagen
                     Icon(
                         imageVector = if (ganado.sexo == "macho") Icons.Rounded.Male else Icons.Rounded.Female,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .size(30.dp)
-                            .align(Alignment.Center)
                     )
                 }
             }
@@ -599,7 +622,6 @@ fun GanadoListItem(
         }
     }
 }
-
 @Composable
 fun EmptyStateCard(
     message: String,

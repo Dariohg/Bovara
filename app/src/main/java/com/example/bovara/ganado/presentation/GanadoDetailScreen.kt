@@ -1,5 +1,6 @@
 package com.example.bovara.ganado.presentation
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -25,8 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.example.bovara.core.utils.DateUtils
+import com.example.bovara.core.utils.ImageUtils
 import com.example.bovara.di.AppModule
 import com.example.bovara.ui.theme.AccentGreen
 
@@ -36,13 +38,16 @@ fun GanadoDetailScreen(
     ganadoId: Int,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (Int) -> Unit,
-    onNavigateHome: () -> Unit
+    onNavigateHome: () -> Unit,
+    onNavigateToVacunas: (Int) -> Unit,
+    onNavigateToAddVacuna: (Int) -> Unit
 ) {
     val context = LocalContext.current
     val ganadoUseCase = AppModule.provideGanadoUseCase(context)
+    val medicamentoUseCase = AppModule.provideMedicamentoUseCase(context)
 
     val viewModel: GanadoDetailViewModel = viewModel(
-        factory = GanadoDetailViewModel.Factory(ganadoId, ganadoUseCase)
+        factory = GanadoDetailViewModel.Factory(ganadoId, ganadoUseCase, medicamentoUseCase)
     )
 
     val state by viewModel.state.collectAsState()
@@ -173,13 +178,29 @@ fun GanadoDetailScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     if (state.ganado!!.imagenUrl != null) {
-                        AsyncImage(
-                            model = state.ganado!!.imagenUrl,
-                            contentDescription = "Foto de ${state.ganado!!.apodo ?: "animal"}",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        // Cargar imagen desde el almacenamiento interno si existe
+                        val bitmap = remember(state.ganado!!.imagenUrl) {
+                            ImageUtils.loadImageFromInternalStorage(context, state.ganado!!.imagenUrl!!)
+                        }
+
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Foto de ${state.ganado!!.apodo ?: "animal"}",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            // Mostrar ícono si no se pudo cargar la imagen
+                            Icon(
+                                imageVector = if (state.ganado!!.sexo == "macho") Icons.Rounded.Male else Icons.Rounded.Female,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(80.dp)
+                            )
+                        }
                     } else {
+                        // Mostrar ícono si no hay imagen
                         Icon(
                             imageVector = if (state.ganado!!.sexo == "macho") Icons.Rounded.Male else Icons.Rounded.Female,
                             contentDescription = null,
@@ -296,30 +317,123 @@ fun GanadoDetailScreen(
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.HealthAndSafety,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.HealthAndSafety,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
 
-                            Text(
-                                text = "Historial de Vacunas",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                                Text(
+                                    text = "Historial de Vacunas",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Botón para ir al historial completo
+                            TextButton(
+                                onClick = { onNavigateToVacunas(ganadoId) }
+                            ) {
+                                Text("Ver todo")
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
-                            text = "No hay registro de vacunas",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        // Mostrar mensaje o lista de vacunas recientes
+                        if (state.vacunasRecientes.isEmpty()) {
+                            Text(
+                                text = "No hay registro de vacunas",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        } else {
+                            // Mostrar las últimas 2-3 vacunas
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                state.vacunasRecientes.take(3).forEach { vacuna ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = when (vacuna.tipo) {
+                                                "desparasitante" -> Icons.Default.Healing
+                                                "vitamina" -> Icons.Default.LocalPharmacy
+                                                "antibiótico" -> Icons.Default.Biotech
+                                                else -> Icons.Default.HealthAndSafety
+                                            },
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = vacuna.nombre,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+
+                                            Text(
+                                                text = DateUtils.formatDate(vacuna.fechaAplicacion),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+
+                                        // Dosis aplicada
+                                        Text(
+                                            text = "${vacuna.dosisML} ml",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+
+                                    if (state.vacunasRecientes.indexOf(vacuna) < state.vacunasRecientes.size - 1 &&
+                                        state.vacunasRecientes.indexOf(vacuna) < 2) {
+                                        Divider(modifier = Modifier.padding(start = 28.dp))
+                                    }
+                                }
+                            }
+                        }
+
+                        // Botón para agregar vacuna
+                        if (state.ganado != null && state.ganado!!.estado == "activo") {
+                            Button(
+                                onClick = { onNavigateToAddVacuna(ganadoId) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.HealthAndSafety,
+                                    contentDescription = null
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text("Registrar Vacuna")
+                            }
+                        }
                     }
                 }
 
