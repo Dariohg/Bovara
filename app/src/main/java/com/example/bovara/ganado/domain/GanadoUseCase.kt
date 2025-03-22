@@ -9,7 +9,7 @@ import java.util.Date
 
 class GanadoUseCase(
     private val repository: GanadoRepository,
-    private val crianzaUseCase: CrianzaUseCase? = null // Inyección opcional del CrianzaUseCase
+    private val crianzaUseCase: CrianzaUseCase? = null
 ) {
     fun getAllGanado(): Flow<List<GanadoEntity>> = repository.getAllGanado()
 
@@ -23,23 +23,10 @@ class GanadoUseCase(
 
     fun searchGanado(query: String): Flow<List<GanadoEntity>> = repository.searchGanado(query)
 
-    /**
-     * Verifica si un número de arete ya existe en la base de datos
-     * @param numeroArete el número de arete a verificar
-     * @return true si el arete ya existe, false en caso contrario
-     */
     suspend fun areteExists(numeroArete: String): Boolean {
         return repository.countByNumeroArete(numeroArete) > 0
     }
 
-    /**
-     * Registra una relación de crianza entre una madre y su cría
-     * @param madreId ID de la madre
-     * @param criaId ID de la cría
-     * @param fechaNacimiento Fecha de nacimiento de la cría
-     * @param notas Notas adicionales sobre la crianza
-     * @return ID de la crianza registrada
-     */
     suspend fun registrarCrianza(
         madreId: Int,
         criaId: Int,
@@ -49,6 +36,18 @@ class GanadoUseCase(
         if (crianzaUseCase == null) {
             throw IllegalStateException("CrianzaUseCase no inicializado")
         }
+
+        // Obtener la madre para verificar si es una becerra
+        val madre = repository.getGanadoById(madreId).first()
+
+        // Si la madre es una becerra, actualizarla a vaca
+        if (madre != null && madre.tipo == "becerra") {
+            val madreActualizada = madre.copy(tipo = "vaca")
+            repository.updateGanado(madreActualizada)
+        }
+
+        // Incrementar el contador de crías de la madre
+        incrementarCriasDeMadre(madreId)
 
         // Registrar la crianza utilizando el caso de uso de Crianza
         return crianzaUseCase.registrarCria(
@@ -103,14 +102,15 @@ class GanadoUseCase(
             "El estado debe ser 'activo', 'vendido' o 'muerto'"
         }
 
-        // Si es una cría y tiene madreId, validar que la madre exista y sea una vaca
+        // Si es una cría y tiene madreId, validar que la madre exista
         if (madreId != null) {
             val madre = repository.getGanadoById(madreId).first()
             if (madre == null) {
                 throw IllegalArgumentException("La madre seleccionada no existe")
             }
-            if (madre.tipo != "vaca") {
-                throw IllegalArgumentException("La madre debe ser de tipo 'vaca'")
+            // Ahora permitimos tanto "vaca" como "becerra" como posibles madres
+            if (madre.tipo != "vaca" && madre.tipo != "becerra") {
+                throw IllegalArgumentException("La madre debe ser de tipo 'vaca' o 'becerra'")
             }
             if (madre.estado != "activo") {
                 throw IllegalArgumentException("La madre debe estar activa")

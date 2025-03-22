@@ -62,16 +62,49 @@ object DateUtils {
         }
     }
 
+    /**
+     * Corrige el problema de zona horaria al seleccionar una fecha del DatePicker
+     * Asegura que la fecha mantenga el día seleccionado independientemente de la zona horaria
+     */
     fun normalizeDateToLocalMidnight(date: Date): Date {
+        // En vez de establecer la hora a mediodía, mantenemos la fecha tal cual está en el calendario
         val calendar = Calendar.getInstance()
         calendar.time = date
 
-        // Establecer la hora a medianoche
-        calendar.set(Calendar.HOUR_OF_DAY, 12)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
+        // Obtener los componentes de la fecha sin modificar
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
 
-        return calendar.time
+        // Crear un nuevo calendario y establecer la fecha con la hora a mediodía
+        // Esto evita problemas con los cambios de zona horaria
+        val newCalendar = Calendar.getInstance()
+        newCalendar.set(year, month, day, 12, 0, 0)
+        newCalendar.set(Calendar.MILLISECOND, 0)
+
+        return newCalendar.time
+    }
+
+    fun fixDatePickerDate(milliseconds: Long?): Date? {
+        if (milliseconds == null) return null
+
+        // Crear la fecha a partir de los milisegundos
+        val date = Date(milliseconds)
+
+        // Obtener los componentes de la fecha
+        val calendar = Calendar.getInstance()
+        calendar.time = date
+
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        // Crear una nueva fecha con la hora fijada a mediodía para evitar problemas de zona horaria
+        val fixedCalendar = Calendar.getInstance()
+        fixedCalendar.set(year, month, day, 12, 0, 0)
+        fixedCalendar.set(Calendar.MILLISECOND, 0)
+
+        // Esta es la fecha correcta que el usuario seleccionó
+        return fixedCalendar.time
     }
 }
