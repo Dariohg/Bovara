@@ -2,6 +2,7 @@ package com.example.bovara.ganado.presentation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -30,7 +31,66 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.core.utils.ImageUtils
 import com.example.bovara.di.AppModule
+import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ui.theme.AccentGreen
+
+// Componente para cada elemento de cría (movido fuera del composable principal)
+@Composable
+fun CriaItem(
+    cria: GanadoEntity,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Icono según el tipo
+        Icon(
+            imageVector = when (cria.tipo) {
+                "becerro", "torito" -> Icons.Default.Male
+                "becerra" -> Icons.Default.Female
+                else -> Icons.Default.Pets
+            },
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Información de la cría
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = cria.apodo ?: "Sin nombre",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium
+            )
+
+            Text(
+                text = "Arete: ${cria.numeroArete}",
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            cria.fechaNacimiento?.let { fecha ->
+                Text(
+                    text = "Fecha de nacimiento: ${DateUtils.formatDate(fecha)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // Flecha para navegar al detalle
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = "Ver detalle",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,7 +100,9 @@ fun GanadoDetailScreen(
     onNavigateToEdit: (Int) -> Unit,
     onNavigateHome: () -> Unit,
     onNavigateToVacunas: (Int) -> Unit,
-    onNavigateToAddVacuna: (Int) -> Unit
+    onNavigateToAddVacuna: (Int) -> Unit,
+    onGanadoClick: (Int) -> Unit, // Función para navegar a otro ganado (madre o cría)
+    onNavigateToAddCria: (Int) -> Unit // Función para navegar a la pantalla de agregar cría
 ) {
     val context = LocalContext.current
     val ganadoUseCase = AppModule.provideGanadoUseCase(context)
@@ -299,10 +361,7 @@ fun GanadoDetailScreen(
                     }
                 }
 
-                // Estas son las secciones para añadir a GanadoDetailScreen.kt
-
-// Añadir justo después de la Card de información principal
-// Sección para mostrar información de la madre (si tiene)
+                // Sección para mostrar información de la madre (si tiene)
                 if (state.madre != null) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -515,64 +574,6 @@ fun GanadoDetailScreen(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                // Componente para cada elemento de cría
-                @Composable
-                fun CriaItem(
-                    cria: GanadoEntity,
-                    onClick: () -> Unit
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onClick)
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Icono según el tipo
-                        Icon(
-                            imageVector = when (cria.tipo) {
-                                "becerro", "torito" -> Icons.Default.Male
-                                "becerra" -> Icons.Default.Female
-                                else -> Icons.Default.Pets
-                            },
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        // Información de la cría
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = cria.apodo ?: "Sin nombre",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Medium
-                            )
-
-                            Text(
-                                text = "Arete: ${cria.numeroArete}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-
-                            cria.fechaNacimiento?.let { fecha ->
-                                Text(
-                                    text = "Fecha de nacimiento: ${DateUtils.formatDate(fecha)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        // Flecha para navegar al detalle
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = "Ver detalle",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
 
                 // Historial de vacunas (placeholder, implementar cuando se tenga la funcionalidad)
