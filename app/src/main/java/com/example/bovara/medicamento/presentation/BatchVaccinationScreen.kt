@@ -34,6 +34,7 @@ import com.example.bovara.di.AppModule
 import com.example.bovara.ui.theme.AccentGreen
 import java.util.Date
 import com.example.bovara.medicamento.data.model.MedicamentoEntity
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -394,9 +395,14 @@ fun BatchVaccinationScreen(
     }
 
     // DatePicker para fecha de aplicación
+    // Date picker dialog
     if (showDatePicker) {
+        // Al inicializar el DatePicker, restamos DOS días
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_MONTH, -1)
+
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.fechaAplicacion.time
+            initialSelectedDateMillis = calendar.timeInMillis
         )
 
         DatePickerDialog(
@@ -405,8 +411,21 @@ fun BatchVaccinationScreen(
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            val date = Date(millis)
-                            viewModel.onEvent(BatchVaccinationEvent.DateChanged(date))
+                            // Extraer componentes directamente sin normalización
+                            val calendar = Calendar.getInstance()
+                            calendar.timeInMillis = millis
+
+                            // Crear una nueva fecha limpia
+                            val result = Calendar.getInstance()
+                            result.clear()
+                            result.set(
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH),
+                                calendar.get(Calendar.DAY_OF_MONTH),
+                                12, 0, 0 // mediodía
+                            )
+
+                            viewModel.onEvent(BatchVaccinationEvent.DateChanged(result.time))
                         }
                         showDatePicker = false
                     }
