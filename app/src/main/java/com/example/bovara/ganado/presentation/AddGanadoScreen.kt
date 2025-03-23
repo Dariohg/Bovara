@@ -2,6 +2,8 @@ package com.example.bovara.ganado.presentation
 
 import android.Manifest
 import android.net.Uri
+import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -81,13 +83,14 @@ fun AddGanadoScreen(
 
     // Lanzador para solicitar permisos
     val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            // Si el permiso es concedido, abre la galería
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allPermissionsGranted = permissions.entries.all { it.value }
+        if (allPermissionsGranted) {
+            // Si los permisos son concedidos, abre la galería
             imagePicker.launch("image/*")
         } else {
-            // Manejo de permiso denegado (puedes mostrar un mensaje)
+            Toast.makeText(context, "Se necesitan permisos para acceder a la galería", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -125,8 +128,20 @@ fun AddGanadoScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable {
-                        // Solicitar permiso al hacer clic en la imagen
-                        permissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+                        // Solicitar permisos al hacer clic en la imagen basado en la versión Android
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            // Android 13+ (API 33+)
+                            permissionLauncher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
+                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            // Android 10+ (API 29+)
+                            permissionLauncher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))
+                        } else {
+                            // Android 9 y anteriores
+                            permissionLauncher.launch(arrayOf(
+                                Manifest.permission.READ_EXTERNAL_STORAGE,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            ))
+                        }
                     },
                 contentAlignment = Alignment.Center
             ) {

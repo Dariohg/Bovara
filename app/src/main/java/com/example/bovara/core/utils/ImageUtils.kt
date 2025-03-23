@@ -42,43 +42,45 @@ object ImageUtils {
 
     fun saveImageToInternalStorage(context: Context, uri: Uri): String {
         try {
-            // Generar un nombre único para la imagen
-            val fileName = "img_${UUID.randomUUID()}"
-
-            // Obtener el bitmap de la URI
-            val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-
-            // Guardar el bitmap y obtener la ruta relativa
-            return saveImageToInternalStorage(context, bitmap, fileName) ?: ""
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al guardar imagen desde URI: ${e.message}")
-            return ""
-        }
-    }
-
-    fun saveImageToInternalStorage(context: Context, bitmap: Bitmap, fileName: String): String? {
-        return try {
             // Crear directorio de imágenes si no existe
             val directory = File(context.filesDir, "images")
             if (!directory.exists()) {
-                directory.mkdir()
+                directory.mkdirs() // Usar mkdirs() en lugar de mkdir()
             }
 
-            // Crear archivo para guardar la imagen
-            val file = File(directory, "$fileName.jpg")
+            // Generar un nombre único para la imagen
+            val fileName = "img_${UUID.randomUUID()}"
 
-            // Guardar imagen en formato JPEG con compresión
-            FileOutputStream(file).use { outputStream ->
-                // Redimensionar la imagen para ahorrar espacio
-                val resizedBitmap = resizeBitmap(bitmap, 800, 600)
-                resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
+            // Usar inputStream para manejar correctamente los recursos
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+
+                if (bitmap == null) {
+                    Log.e(TAG, "No se pudo decodificar la imagen")
+                    return ""
+                }
+
+                // Crear archivo para guardar la imagen
+                val file = File(directory, "$fileName.jpg")
+
+                // Guardar imagen en formato JPEG con compresión
+                FileOutputStream(file).use { outputStream ->
+                    val resizedBitmap = resizeBitmap(bitmap, 800, 600)
+                    resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
+                    outputStream.flush()
+                }
+
+                // Registrar éxito en el log
+                Log.d(TAG, "Imagen guardada exitosamente en: ${file.absolutePath}")
+                return "images/$fileName.jpg"
+            } ?: run {
+                Log.e(TAG, "No se pudo abrir el input stream para la URI")
+                return ""
             }
-
-            // Devolver ruta relativa
-            "images/$fileName.jpg"
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             Log.e(TAG, "Error al guardar imagen: ${e.message}")
-            null
+            e.printStackTrace()
+            return ""
         }
     }
 

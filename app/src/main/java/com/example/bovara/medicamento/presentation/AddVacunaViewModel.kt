@@ -75,8 +75,8 @@ class AddVacunaViewModel(
                 _state.update {
                     it.copy(
                         aplicado = aplicado,
-                        // Si está aplicado, no puede estar programado
-                        esProgramado = if (aplicado) false else it.esProgramado
+                        esProgramado = if (aplicado) false else it.esProgramado,
+                        fechaAplicacion = if (aplicado && it.fechaAplicacion == null) Date() else it.fechaAplicacion
                     )
                 }
             }
@@ -94,14 +94,7 @@ class AddVacunaViewModel(
                 }
             }
             is AddVacunaEvent.FechaAplicacionChanged -> {
-                // Normalizar la fecha para evitar problemas de zona horaria
-                val calendar = Calendar.getInstance()
-                calendar.time = event.value
-                calendar.set(Calendar.HOUR_OF_DAY, 12)
-                calendar.set(Calendar.MINUTE, 0)
-                calendar.set(Calendar.SECOND, 0)
-                calendar.set(Calendar.MILLISECOND, 0)
-                _state.update { it.copy(fechaAplicacion = calendar.time) }
+                _state.update { it.copy(fechaAplicacion = event.value) }
             }
             is AddVacunaEvent.FechaProgramadaChanged -> {
                 // Normalizar la fecha para evitar problemas de zona horaria

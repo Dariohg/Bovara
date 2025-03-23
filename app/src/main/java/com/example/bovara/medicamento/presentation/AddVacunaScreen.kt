@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.di.AppModule
+import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -238,7 +239,10 @@ fun AddVacunaScreen(
 
             // Fecha de aplicación obligatoria
             OutlinedTextField(
-                value = state.fechaAplicacion?.let { DateUtils.formatDate(it) } ?: "",
+                value = state.fechaAplicacion?.let {
+                    // Mostrar exactamente la fecha guardada sin manipulaciones
+                    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)
+                } ?: "",
                 onValueChange = { /* No editable directamente */ },
                 label = { Text("Fecha de Aplicación") },
                 readOnly = true,
@@ -310,11 +314,15 @@ fun AddVacunaScreen(
 
     // Date picker dialog
     if (showDatePicker) {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
+
+        val displayCalendar = Calendar.getInstance()
+        // Si ya hay una fecha guardada, usarla
+        if (state.fechaAplicacion != null) {
+            displayCalendar.time = state.fechaAplicacion!!
+        }
 
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = calendar.timeInMillis
+            initialSelectedDateMillis = displayCalendar.timeInMillis
         )
 
         DatePickerDialog(
@@ -323,21 +331,11 @@ fun AddVacunaScreen(
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            // Extraer componentes directamente sin normalización
-                            val calendar = Calendar.getInstance()
-                            calendar.timeInMillis = millis
+                            // Creamos un objeto Date con la fecha seleccionada
+                            val selectedDate = Date(millis)
 
-                            // Crear una nueva fecha limpia
-                            val result = Calendar.getInstance()
-                            result.clear()
-                            result.set(
-                                calendar.get(Calendar.YEAR),
-                                calendar.get(Calendar.MONTH),
-                                calendar.get(Calendar.DAY_OF_MONTH),
-                                12, 0, 0 // mediodía
-                            )
-
-                            viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(result.time))
+                            // Guardamos directamente esta fecha sin ninguna manipulación
+                            viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(selectedDate))
                         }
                         showDatePicker = false
                     }
