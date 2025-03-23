@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.times
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.core.utils.ImageUtils
@@ -304,25 +306,213 @@ fun BatchVaccinationScreen(
                 }
             } else {
                 // Grid de animales
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(bottom = 80.dp),
+                LazyColumn(
                     modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(state.animalesCandidatos) { animal ->
-                        val isSelected = state.animalesSeleccionados.contains(animal.id)
+                    // Si no hay animales candidatos, mostrar mensaje
+                    if (state.animalesCandidatos.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(72.dp)
+                                    )
 
-                        AnimalVaccinationCard(
-                            imageUrl = animal.imagenUrl,
-                            numeroArete = animal.numeroArete,
-                            apodo = animal.apodo,
-                            isSelected = isSelected,
-                            onToggleSelection = {
-                                viewModel.onEvent(BatchVaccinationEvent.ToggleAnimalSelection(animal.id))
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    Text(
+                                        text = if (state.selectedMedicamento == null) "Seleccione un medicamento" else "No hay animales activos",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
-                        )
+                        }
+                    } else {
+                        // Sección de Toros
+                        if (state.animalesAgrupados.toros.isNotEmpty()) {
+                            item {
+                                CategoryHeader(title = "Toros", count = state.animalesAgrupados.toros.size)
+                            }
+
+                            item {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(2),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height((state.animalesAgrupados.toros.size / 2 + state.animalesAgrupados.toros.size % 2) * 180.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(state.animalesAgrupados.toros) { animal ->
+                                        val isSelected = state.animalesSeleccionados.contains(animal.id)
+                                        AnimalVaccinationCard(
+                                            imageUrl = animal.imagenUrl,
+                                            numeroArete = animal.numeroArete,
+                                            apodo = animal.apodo,
+                                            isSelected = isSelected,
+                                            onToggleSelection = {
+                                                viewModel.onEvent(BatchVaccinationEvent.ToggleAnimalSelection(animal.id))
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+
+                        // Sección de Vacas
+                        if (state.animalesAgrupados.vacas.isNotEmpty()) {
+                            item {
+                                CategoryHeader(title = "Vacas", count = state.animalesAgrupados.vacas.size)
+                            }
+
+                            item {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(2),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height((state.animalesAgrupados.vacas.size / 2 + state.animalesAgrupados.vacas.size % 2) * 180.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(state.animalesAgrupados.vacas) { animal ->
+                                        val isSelected = state.animalesSeleccionados.contains(animal.id)
+                                        AnimalVaccinationCard(
+                                            imageUrl = animal.imagenUrl,
+                                            numeroArete = animal.numeroArete,
+                                            apodo = animal.apodo,
+                                            isSelected = isSelected,
+                                            onToggleSelection = {
+                                                viewModel.onEvent(BatchVaccinationEvent.ToggleAnimalSelection(animal.id))
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+
+                        // Sección de Becerras
+                        if (state.animalesAgrupados.becerras.isNotEmpty()) {
+                            item {
+                                CategoryHeader(title = "Becerras", count = state.animalesAgrupados.becerras.size)
+                            }
+
+                            item {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(2),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height((state.animalesAgrupados.becerras.size / 2 + state.animalesAgrupados.becerras.size % 2) * 180.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(state.animalesAgrupados.becerras) { animal ->
+                                        val isSelected = state.animalesSeleccionados.contains(animal.id)
+                                        AnimalVaccinationCard(
+                                            imageUrl = animal.imagenUrl,
+                                            numeroArete = animal.numeroArete,
+                                            apodo = animal.apodo,
+                                            isSelected = isSelected,
+                                            onToggleSelection = {
+                                                viewModel.onEvent(BatchVaccinationEvent.ToggleAnimalSelection(animal.id))
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+
+                        // Sección de Becerros
+                        if (state.animalesAgrupados.becerros.isNotEmpty()) {
+                            item {
+                                CategoryHeader(title = "Becerros", count = state.animalesAgrupados.becerros.size)
+                            }
+
+                            item {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(2),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height((state.animalesAgrupados.becerros.size / 2 + state.animalesAgrupados.becerros.size % 2) * 180.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(state.animalesAgrupados.becerros) { animal ->
+                                        val isSelected = state.animalesSeleccionados.contains(animal.id)
+                                        AnimalVaccinationCard(
+                                            imageUrl = animal.imagenUrl,
+                                            numeroArete = animal.numeroArete,
+                                            apodo = animal.apodo,
+                                            isSelected = isSelected,
+                                            onToggleSelection = {
+                                                viewModel.onEvent(BatchVaccinationEvent.ToggleAnimalSelection(animal.id))
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+
+                        // Sección de Otros (por si hay tipos no contemplados)
+                        if (state.animalesAgrupados.otros.isNotEmpty()) {
+                            item {
+                                CategoryHeader(title = "Otros", count = state.animalesAgrupados.otros.size)
+                            }
+
+                            item {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(2),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height((state.animalesAgrupados.otros.size / 2 + state.animalesAgrupados.otros.size % 2) * 180.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(state.animalesAgrupados.otros) { animal ->
+                                        val isSelected = state.animalesSeleccionados.contains(animal.id)
+                                        AnimalVaccinationCard(
+                                            imageUrl = animal.imagenUrl,
+                                            numeroArete = animal.numeroArete,
+                                            apodo = animal.apodo,
+                                            isSelected = isSelected,
+                                            onToggleSelection = {
+                                                viewModel.onEvent(BatchVaccinationEvent.ToggleAnimalSelection(animal.id))
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -734,4 +924,33 @@ fun MedicamentoPickerItem(
             )
         }
     }
+}
+
+@Composable
+fun CategoryHeader(title: String, count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f)
+        )
+
+        Text(
+            text = "($count)",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+
+    Divider(
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+        thickness = 1.dp,
+        modifier = Modifier.padding(horizontal = 16.dp)
+    )
 }

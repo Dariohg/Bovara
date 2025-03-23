@@ -34,11 +34,35 @@ class BatchVaccinationViewModel(
         viewModelScope.launch {
             try {
                 val animalesActivos = ganadoUseCase.getGanadoByEstado("activo").first()
+
+                // Agrupar los animales por tipo
+                val toros = animalesActivos.filter { it.tipo == "toro" }
+                val vacas = animalesActivos.filter { it.tipo == "vaca" }
+                val becerras = animalesActivos.filter { it.tipo == "becerra" }
+                val becerros = animalesActivos.filter { it.tipo == "becerro" }
+                val otros = animalesActivos.filter {
+                    it.tipo != "toro" && it.tipo != "vaca" &&
+                            it.tipo != "becerra" && it.tipo != "becerro"
+                }
+
+                // Agrupar los animales
+                val animalesAgrupados = AnimalesAgrupados(
+                    toros = toros,
+                    vacas = vacas,
+                    becerras = becerras,
+                    becerros = becerros,
+                    otros = otros
+                )
+
                 _state.update { it.copy(
-                    animalesCandidatos = animalesActivos
+                    animalesCandidatos = animalesActivos,
+                    animalesAgrupados = animalesAgrupados
                 )}
             } catch (e: Exception) {
                 // Manejar error
+                _state.update { it.copy(
+                    error = e.message ?: "Error al cargar los animales"
+                )}
             }
         }
     }
@@ -239,6 +263,7 @@ class BatchVaccinationViewModel(
 
 data class BatchVaccinationState(
     val animalesCandidatos: List<GanadoEntity> = emptyList(),
+    val animalesAgrupados: AnimalesAgrupados = AnimalesAgrupados(),
     val animalesSeleccionados: Set<Int> = emptySet(),
     val medicamentosDisponibles: List<MedicamentoEntity> = emptyList(),
     val selectedMedicamento: MedicamentoEntity? = null,
@@ -261,3 +286,11 @@ sealed class BatchVaccinationEvent {
     object FinishVaccination : BatchVaccinationEvent()
     object PauseVaccination : BatchVaccinationEvent()
 }
+
+data class AnimalesAgrupados(
+    val toros: List<GanadoEntity> = emptyList(),
+    val vacas: List<GanadoEntity> = emptyList(),
+    val becerras: List<GanadoEntity> = emptyList(),
+    val becerros: List<GanadoEntity> = emptyList(),
+    val otros: List<GanadoEntity> = emptyList() // Por si hay algún tipo no contemplado
+)
