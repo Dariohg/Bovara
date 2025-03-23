@@ -37,17 +37,19 @@ class BatchVaccinationViewModel(
 
                 // Agrupar los animales por tipo
                 val toros = animalesActivos.filter { it.tipo == "toro" }
+                val toritos = animalesActivos.filter { it.tipo== "torito" }
                 val vacas = animalesActivos.filter { it.tipo == "vaca" }
                 val becerras = animalesActivos.filter { it.tipo == "becerra" }
                 val becerros = animalesActivos.filter { it.tipo == "becerro" }
                 val otros = animalesActivos.filter {
                     it.tipo != "toro" && it.tipo != "vaca" &&
-                            it.tipo != "becerra" && it.tipo != "becerro"
+                            it.tipo != "becerra" && it.tipo != "becerro" && it.tipo != "torito"
                 }
 
                 // Agrupar los animales
                 val animalesAgrupados = AnimalesAgrupados(
                     toros = toros,
+                    toritos = toritos,
                     vacas = vacas,
                     becerras = becerras,
                     becerros = becerros,
@@ -289,8 +291,9 @@ sealed class BatchVaccinationEvent {
 
 data class AnimalesAgrupados(
     val toros: List<GanadoEntity> = emptyList(),
+    val toritos: List<GanadoEntity> = emptyList(),
     val vacas: List<GanadoEntity> = emptyList(),
     val becerras: List<GanadoEntity> = emptyList(),
     val becerros: List<GanadoEntity> = emptyList(),
-    val otros: List<GanadoEntity> = emptyList() // Por si hay algún tipo no contemplado
+    val otros: List<GanadoEntity> = emptyList()
 )

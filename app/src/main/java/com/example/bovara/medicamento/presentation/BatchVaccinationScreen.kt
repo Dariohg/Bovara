@@ -378,6 +378,41 @@ fun BatchVaccinationScreen(
                             }
                         }
 
+                        // Sección de toritos
+                        if (state.animalesAgrupados.toritos.isNotEmpty()) {
+                            item {
+                                CategoryHeader(title = "Toritos", count = state.animalesAgrupados.toritos.size)
+                            }
+
+                            item {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(2),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height((state.animalesAgrupados.toritos.size / 2 + state.animalesAgrupados.toritos.size % 2) * 180.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(state.animalesAgrupados.toritos) { animal ->
+                                        val isSelected = state.animalesSeleccionados.contains(animal.id)
+                                        AnimalVaccinationCard(
+                                            imageUrl = animal.imagenUrl,
+                                            numeroArete = animal.numeroArete,
+                                            apodo = animal.apodo,
+                                            isSelected = isSelected,
+                                            onToggleSelection = {
+                                                viewModel.onEvent(BatchVaccinationEvent.ToggleAnimalSelection(animal.id))
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+
                         // Sección de Vacas
                         if (state.animalesAgrupados.vacas.isNotEmpty()) {
                             item {
