@@ -3,6 +3,7 @@ package com.example.bovara.ganado.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.bovara.core.utils.DateDebugger
 import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ganado.domain.GanadoUseCase
@@ -93,7 +94,6 @@ class AddGanadoViewModel(
                 checkCanSave()
             }
             is AddGanadoEvent.FechaNacimientoChanged -> {
-                // Normalizar la fecha para evitar problemas de zona horaria
                 val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.value)
                 _state.update { it.copy(fechaNacimiento = normalizedDate) }
             }
@@ -224,6 +224,7 @@ class AddGanadoViewModel(
                     }
                     return@launch
                 }
+                val fechaNacimiento = state.fechaNacimiento
 
                 // Llamar al caso de uso para guardar el ganado
                 val id = ganadoUseCase.saveGanado(
@@ -232,7 +233,7 @@ class AddGanadoViewModel(
                     sexo = state.sexo,
                     tipo = state.tipo,
                     color = state.color,
-                    fechaNacimiento = state.fechaNacimiento,
+                    fechaNacimiento = fechaNacimiento,
                     estado = state.estado,
                     imagenUrl = state.imagenUrl,
                     madreId = state.madreId // Ahora incluimos la madre

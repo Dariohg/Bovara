@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import java.util.Date
 
 class AddVacunaViewModel(
@@ -94,8 +95,13 @@ class AddVacunaViewModel(
             }
             is AddVacunaEvent.FechaAplicacionChanged -> {
                 // Normalizar la fecha para evitar problemas de zona horaria
-                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.value)
-                _state.update { it.copy(fechaAplicacion = normalizedDate) }
+                val calendar = Calendar.getInstance()
+                calendar.time = event.value
+                calendar.set(Calendar.HOUR_OF_DAY, 12)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                _state.update { it.copy(fechaAplicacion = calendar.time) }
             }
             is AddVacunaEvent.FechaProgramadaChanged -> {
                 // Normalizar la fecha para evitar problemas de zona horaria

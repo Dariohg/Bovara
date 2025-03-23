@@ -502,7 +502,13 @@ fun AddGanadoScreen(
     // Date picker dialog
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.fechaNacimiento?.time ?: System.currentTimeMillis()
+            // Si la fecha ya existe, usamos exactamente esa sin ajustar
+            // Si no hay fecha (es null), usamos la fecha actual, pero restamos un día para compensar
+            initialSelectedDateMillis = state.fechaNacimiento?.time ?: run {
+                val calendar = Calendar.getInstance()
+                calendar.add(Calendar.DAY_OF_MONTH, -1) // Restar un día a la fecha actual
+                calendar.timeInMillis
+            }
         )
 
         DatePickerDialog(

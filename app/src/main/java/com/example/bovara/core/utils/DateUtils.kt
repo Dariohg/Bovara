@@ -6,8 +6,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+/**
+ * Utilidades para el manejo de fechas en la aplicación
+ */
 object DateUtils {
 
+    /**
+     * Formatea una fecha en formato dd/MM/yyyy
+     */
     fun formatDate(date: Date?): String {
         if (date == null) return "No definida"
 
@@ -15,6 +21,9 @@ object DateUtils {
         return formatter.format(date)
     }
 
+    /**
+     * Formatea una fecha y hora en formato dd/MM/yyyy HH:mm
+     */
     fun formatDateTime(date: Date?): String {
         if (date == null) return "No definida"
 
@@ -22,6 +31,9 @@ object DateUtils {
         return formatter.format(date)
     }
 
+    /**
+     * Analiza una cadena de texto para convertirla en objeto Date
+     */
     fun parseDate(dateString: String): Date? {
         return try {
             val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -31,10 +43,16 @@ object DateUtils {
         }
     }
 
+    /**
+     * Obtiene la fecha actual
+     */
     fun getCurrentDate(): Date {
         return Calendar.getInstance().time
     }
 
+    /**
+     * Calcula la edad a partir de una fecha de nacimiento
+     */
     fun calculateAge(birthDate: Date?): String {
         if (birthDate == null) return "Desconocida"
 
@@ -62,27 +80,25 @@ object DateUtils {
         }
     }
 
-    /**
-     * Corrige el problema de zona horaria al seleccionar una fecha del DatePicker
-     * Asegura que la fecha mantenga el día seleccionado independientemente de la zona horaria
-     */
-    fun normalizeDateToLocalMidnight(date: Date): Date {
-        // En vez de establecer la hora a mediodía, mantenemos la fecha tal cual está en el calendario
-        val calendar = Calendar.getInstance()
+    fun normalizeDateToLocalMidnight(date: Date, isUserSelection: Boolean = true): Date {
+        val calendar = Calendar.getInstance(TimeZone.getDefault())
         calendar.time = date
 
-        // Obtener los componentes de la fecha sin modificar
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH)
-        val day = calendar.get(Calendar.DAY_OF_MONTH)
+        if (isUserSelection) {
+            // Para selecciones de usuario, añadir un día para compensar
+            calendar.add(Calendar.DAY_OF_MONTH, 1)
+        } else {
+            // Para inicializaciones, restar un día adicional
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
+        }
 
-        // Crear un nuevo calendario y establecer la fecha con la hora a mediodía
-        // Esto evita problemas con los cambios de zona horaria
-        val newCalendar = Calendar.getInstance()
-        newCalendar.set(year, month, day, 12, 0, 0)
-        newCalendar.set(Calendar.MILLISECOND, 0)
+        // Configurar hora a mediodía
+        calendar.set(Calendar.HOUR_OF_DAY, 12)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
 
-        return newCalendar.time
+        return calendar.time
     }
 
     fun fixDatePickerDate(milliseconds: Long?): Date? {
@@ -91,20 +107,7 @@ object DateUtils {
         // Crear la fecha a partir de los milisegundos
         val date = Date(milliseconds)
 
-        // Obtener los componentes de la fecha
-        val calendar = Calendar.getInstance()
-        calendar.time = date
-
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH)
-        val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-        // Crear una nueva fecha con la hora fijada a mediodía para evitar problemas de zona horaria
-        val fixedCalendar = Calendar.getInstance()
-        fixedCalendar.set(year, month, day, 12, 0, 0)
-        fixedCalendar.set(Calendar.MILLISECOND, 0)
-
-        // Esta es la fecha correcta que el usuario seleccionó
-        return fixedCalendar.time
+        // Aplicar la normalización que corrige el problema
+        return normalizeDateToLocalMidnight(date)
     }
 }

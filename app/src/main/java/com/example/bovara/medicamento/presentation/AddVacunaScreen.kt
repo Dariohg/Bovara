@@ -311,7 +311,7 @@ fun AddVacunaScreen(
     // Date picker dialog
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.fechaAplicacion?.time ?: System.currentTimeMillis()
+            initialSelectedDateMillis = System.currentTimeMillis()
         )
 
         DatePickerDialog(
@@ -320,8 +320,14 @@ fun AddVacunaScreen(
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
+                            // Crear fecha a partir de milisegundos seleccionados
                             val date = Date(millis)
-                            viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(date))
+
+                            // IMPORTANTE: Usar la función normalizeDateToLocalMidnight
+                            // PERO pasando true para que añada el día extra
+                            val normalizedDate = DateUtils.normalizeDateToLocalMidnight(date, true)
+
+                            viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(normalizedDate))
                         }
                         showDatePicker = false
                     }
