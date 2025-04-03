@@ -105,6 +105,18 @@ class AddVacunaViewModel(
             is AddVacunaEvent.NotasChanged -> {
                 _state.update { it.copy(notas = event.value) }
             }
+            is AddVacunaEvent.NumeroAplicacionesChanged -> {
+                _state.update { it.copy(numeroAplicaciones = event.value) }
+            }
+            is AddVacunaEvent.IntervaloEnDiasChanged -> {
+                _state.update { it.copy(intervaloEnDias = event.value) }
+            }
+            is AddVacunaEvent.HoraAplicacionChanged -> {
+                _state.update { it.copy(horaAplicacion = event.value) }
+            }
+            is AddVacunaEvent.EsMultipleAplicacionChanged -> {
+                _state.update { it.copy(esMultipleAplicacion = event.value) }
+            }
             is AddVacunaEvent.SaveVacuna -> saveVacuna()
         }
     }
@@ -174,17 +186,63 @@ class AddVacunaViewModel(
             try {
                 val dosis = state.dosisML.toFloatOrNull() ?: 0f
 
-                medicamentoUseCase.saveMedicamento(
-                    nombre = state.nombre,
-                    descripcion = state.descripcion,
-                    fechaAplicacion = state.fechaAplicacion ?: Date(),
-                    dosisML = dosis,
-                    ganadoId = ganadoId,
-                    tipo = state.tipo,
-                    esProgramado = false, // Nunca es programado para vacunas individuales
-                    aplicado = true, // Siempre es aplicado para vacunas individuales
-                    notas = state.notas.takeIf { it.isNotBlank() }
-                )
+                if (state.esMultipleAplicacion && state.numeroAplicaciones > 1) {
+                    // Guardamos la primera aplicación como aplicada
+                    val idPrimeraAplicacion = medicamentoUseCase.saveMedicamento(
+                        nombre = state.nombre,
+                        descripcion = state.descripcion,
+                        fechaAplicacion = state.fechaAplicacion ?: Date(),
+                        dosisML = dosis,
+                        ganadoId = ganadoId,
+                        tipo = state.tipo,
+                        esProgramado = false,
+                        aplicado = true,
+                        notas = "${state.notas?.takeIf { it.isNotBlank() } ?: ""}\nAplicación 1 de ${state.numeroAplicaciones}"
+                    )
+
+                    // Programamos las siguientes aplicaciones
+                    for (i in 2..state.numeroAplicaciones) {
+                        // Calculamos la fecha de la próxima aplicación
+                        val fechaProxima = Calendar.getInstance().apply {
+                            time = state.fechaAplicacion ?: Date()
+                            add(Calendar.DAY_OF_YEAR, state.intervaloEnDias * (i - 1))
+
+                            // Ajustamos la hora si se especificó
+                            state.horaAplicacion?.let { hora ->
+                                val calHora = Calendar.getInstance().apply { time = hora }
+                                set(Calendar.HOUR_OF_DAY, calHora.get(Calendar.HOUR_OF_DAY))
+                                set(Calendar.MINUTE, calHora.get(Calendar.MINUTE))
+                            }
+                        }.time
+
+                        medicamentoUseCase.saveMedicamento(
+                            nombre = state.nombre,
+                            descripcion = state.descripcion,
+                            fechaAplicacion = Date(), // Fecha actual como referencia
+                            fechaProgramada = fechaProxima,
+                            dosisML = dosis,
+                            ganadoId = ganadoId,
+                            tipo = state.tipo,
+                            esProgramado = true,
+                            aplicado = false,
+                            recordatorio = true,
+                            notas = "${state.notas?.takeIf { it.isNotBlank() } ?: ""}\nAplicación $i de ${state.numeroAplicaciones}"
+                        )
+                    }
+                } else {
+                    // Si es aplicación única, guardamos normalmente
+                    medicamentoUseCase.saveMedicamento(
+                        nombre = state.nombre,
+                        descripcion = state.descripcion,
+                        fechaAplicacion = state.fechaAplicacion ?: Date(),
+                        dosisML = dosis,
+                        ganadoId = ganadoId,
+                        tipo = state.tipo,
+                        esProgramado = false,
+                        aplicado = true,
+                        notas = state.notas.takeIf { it.isNotBlank() }
+                    )
+                }
 
                 _state.update {
                     it.copy(
@@ -240,7 +298,11 @@ data class AddVacunaState(
     val isLoading: Boolean = false,
     val canSave: Boolean = false,
     val savedSuccessfully: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val numeroAplicaciones: Int = 1,       // Por defecto 1 aplicación
+    val intervaloEnDias: Int = 0,          // Intervalo entre aplicaciones en días
+    val horaAplicacion: Date? = null,      // Hora de aplicación (usaremos solo la parte de hora)
+    val esMultipleAplicacion: Boolean = false,  // Indicador si es una vacuna de múltiples aplicaciones
 )
 
 sealed class AddVacunaEvent {
@@ -254,5 +316,9 @@ sealed class AddVacunaEvent {
     data class FechaProgramadaChanged(val value: Date) : AddVacunaEvent()
     data class RecordatorioChanged(val value: Boolean) : AddVacunaEvent()
     data class NotasChanged(val value: String) : AddVacunaEvent()
+    data class NumeroAplicacionesChanged(val value: Int) : AddVacunaEvent()
+    data class IntervaloEnDiasChanged(val value: Int) : AddVacunaEvent()
+    data class HoraAplicacionChanged(val value: Date) : AddVacunaEvent()
+    data class EsMultipleAplicacionChanged(val value: Boolean) : AddVacunaEvent()
     object SaveVacuna : AddVacunaEvent()
 }

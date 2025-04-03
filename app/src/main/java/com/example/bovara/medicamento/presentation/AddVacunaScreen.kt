@@ -1,5 +1,6 @@
 package com.example.bovara.medicamento.presentation
 
+import android.app.TimePickerDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +30,9 @@ import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.di.AppModule
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material3.TimePickerState
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.TimePicker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -262,6 +266,198 @@ fun AddVacunaScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // Después del campo de fecha de aplicación, añadimos esta sección
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = state.esMultipleAplicacion,
+                    onCheckedChange = { viewModel.onEvent(AddVacunaEvent.EsMultipleAplicacionChanged(it)) }
+                )
+
+                Text(
+                    text = "Aplicaciones múltiples",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+            if (state.esMultipleAplicacion) {
+                // Número de aplicaciones
+                OutlinedTextField(
+                    value = state.numeroAplicaciones.toString(),
+                    onValueChange = {
+                        try {
+                            val num = it.toIntOrNull() ?: 1
+                            if (num > 0) {
+                                viewModel.onEvent(AddVacunaEvent.NumeroAplicacionesChanged(num))
+                            }
+                        } catch (e: Exception) {
+                            // Ignorar entrada inválida
+                        }
+                    },
+                    label = { Text("Número de aplicaciones*") },
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Repeat,
+                            contentDescription = null
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+                )
+
+                // Intervalo en días
+                OutlinedTextField(
+                    value = state.intervaloEnDias.toString(),
+                    onValueChange = {
+                        try {
+                            val num = it.toIntOrNull() ?: 0
+                            if (num >= 0) {
+                                viewModel.onEvent(AddVacunaEvent.IntervaloEnDiasChanged(num))
+                            }
+                        } catch (e: Exception) {
+                            // Ignorar entrada inválida
+                        }
+                    },
+                    label = { Text("Intervalo en días*") },
+                    placeholder = { Text("Ej: 2 (para aplicar cada 2 días)") },
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = null
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+                )
+
+                // Hora de aplicación
+                var showTimePicker by remember { mutableStateOf(false) }
+
+                OutlinedTextField(
+                    value = state.horaAplicacion?.let {
+                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(it)
+                    } ?: "",
+                    onValueChange = { /* No editable directamente */ },
+                    label = { Text("Hora de aplicación (opcional)") },
+                    placeholder = { Text("Ej: 16:00") },
+                    singleLine = true,
+                    readOnly = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null
+                        )
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { showTimePicker = true }) {
+                            Icon(
+                                imageVector = Icons.Default.AccessTime,
+                                contentDescription = "Seleccionar hora"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Time picker dialog
+                if (showTimePicker) {
+                    val timePickerState = rememberTimePickerState(
+                        initialHour = state.horaAplicacion?.let {
+                            Calendar.getInstance().apply { time = it }.get(Calendar.HOUR_OF_DAY)
+                        } ?: 12,
+                        initialMinute = state.horaAplicacion?.let {
+                            Calendar.getInstance().apply { time = it }.get(Calendar.MINUTE)
+                        } ?: 0
+                    )
+
+                    TimePickerDialog(
+                        onDismissRequest = { showTimePicker = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    // Crear fecha con la hora seleccionada
+                                    val hora = Calendar.getInstance().apply {
+                                        set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                                        set(Calendar.MINUTE, timePickerState.minute)
+                                        set(Calendar.SECOND, 0)
+                                    }.time
+
+                                    viewModel.onEvent(AddVacunaEvent.HoraAplicacionChanged(hora))
+                                    showTimePicker = false
+                                }
+                            ) {
+                                Text("Aceptar")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showTimePicker = false }) {
+                                Text("Cancelar")
+                            }
+                        }
+                    ) {
+                        TimePicker(state = timePickerState)
+                    }
+                }
+
+                // Texto informativo
+                if (state.numeroAplicaciones > 1 && state.intervaloEnDias > 0) {
+                    Text(
+                        text = "Se aplicará ${state.numeroAplicaciones} veces, con un intervalo de ${state.intervaloEnDias} día(s) entre cada aplicación.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+
+                    // Mostrar las fechas de aplicación
+                    if (state.fechaAplicacion != null) {
+                        Text(
+                            text = "Fechas de aplicación:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+
+                        Column(modifier = Modifier.padding(start = 16.dp, top = 4.dp)) {
+                            // Primera aplicación (actual)
+                            Text(
+                                text = "1. ${DateUtils.formatDate(state.fechaAplicacion!!)} (hoy)",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            // Aplicaciones siguientes
+                            for (i in 2..state.numeroAplicaciones) {
+                                val fechaProxima = Calendar.getInstance().apply {
+                                    time = state.fechaAplicacion!!
+                                    add(Calendar.DAY_OF_YEAR, state.intervaloEnDias * (i - 1))
+                                }.time
+
+                                Text(
+                                    text = "$i. ${DateUtils.formatDate(fechaProxima)}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Notas adicionales (opcional)
             OutlinedTextField(
                 value = state.notas,
@@ -408,4 +604,18 @@ fun MedicamentoTypeOption(
             )
         }
     }
+}
+@Composable
+fun TimePickerDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    dismissButton: @Composable () -> Unit,
+    content: @Composable () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = confirmButton,
+        dismissButton = dismissButton,
+        text = { content() }
+    )
 }
