@@ -61,7 +61,8 @@ fun HomeScreen(
     onNavigateToVacunacionHistorial: () -> Unit,
     onGanadoClick: (Int) -> Unit,
     onNavigateToSearchResults: (String) -> Unit,
-    viewModel: HomeViewModel
+    viewModel: HomeViewModel,
+    onNavigateToStatistics: () -> Unit,
 ) {
     val ganado by viewModel.ganado.collectAsState()
     val filteredGanado by viewModel.filteredGanado.collectAsState()
@@ -80,6 +81,13 @@ fun HomeScreen(
                             fontSize = 26.sp
                         )
                     )
+                },actions = {
+                    IconButton(onClick = onNavigateToStatistics) {
+                        Icon(
+                            imageVector = Icons.Filled.BarChart,
+                            contentDescription = "Estadísticas"
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background

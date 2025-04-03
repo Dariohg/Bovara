@@ -63,6 +63,9 @@ fun NavigationWrapper() {
                     // Pasar la consulta como argumento de navegación
                     navController.navigate("${Screens.GANADO_LIST_BY_CATEGORY}?query=$query")
                 },
+                onNavigateToStatistics = {
+                    navController.navigate(Screens.STATISTICS)
+                },
                 viewModel = homeViewModel
             )
         }

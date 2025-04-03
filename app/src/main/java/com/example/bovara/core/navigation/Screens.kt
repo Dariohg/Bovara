@@ -2,6 +2,7 @@ package com.example.bovara.core.navigation
 
 object Screens {
     const val HOME = "home"
+    const val STATISTICS = "statistics"
 
     // Rutas para gestión de ganado
     const val GANADO_LIST_BY_CATEGORY = "ganado_list_by_category"
