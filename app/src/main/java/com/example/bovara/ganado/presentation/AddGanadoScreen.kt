@@ -46,7 +46,10 @@ import com.example.bovara.ganado.presentation.components.GenderOption
 import com.example.bovara.ganado.presentation.components.StatusOption
 import com.example.bovara.ganado.presentation.components.TypeOption
 import java.util.*
-
+import android.os.Environment
+import java.io.File
+import android.content.ContentValues
+import android.provider.MediaStore
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddGanadoScreen(
@@ -56,6 +59,7 @@ fun AddGanadoScreen(
 ) {
     val context = LocalContext.current
     val ganadoUseCase = AppModule.provideGanadoUseCase(context)
+    var tempImageUri by remember { mutableStateOf<Uri?>(null) }
 
     val viewModel: AddGanadoViewModel = viewModel(
         factory = AddGanadoViewModel.Factory(ganadoUseCase, madreId)
@@ -94,6 +98,32 @@ fun AddGanadoScreen(
         }
     }
 
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempImageUri != null) {
+            // Guarda la ruta de la imagen en el estado
+            val imagePath = ImageUtils.saveImageToInternalStorage(context, tempImageUri!!)
+            viewModel.onEvent(AddGanadoEvent.ImageUrlChanged(imagePath))
+            selectedImageUri = tempImageUri
+        }
+    }
+
+// Lanzador para permisos de cámara
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Si el permiso es concedido, inicia la cámara
+            tempImageUri = ImageUtils.createImageUri(context)
+            tempImageUri?.let {
+                cameraLauncher.launch(it)
+            }
+        } else {
+            Toast.makeText(context, "Se necesita permiso de cámara", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -126,23 +156,7 @@ fun AddGanadoScreen(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable {
-                        // Solicitar permisos al hacer clic en la imagen basado en la versión Android
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            // Android 13+ (API 33+)
-                            permissionLauncher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
-                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            // Android 10+ (API 29+)
-                            permissionLauncher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))
-                        } else {
-                            // Android 9 y anteriores
-                            permissionLauncher.launch(arrayOf(
-                                Manifest.permission.READ_EXTERNAL_STORAGE,
-                                Manifest.permission.WRITE_EXTERNAL_STORAGE
-                            ))
-                        }
-                    },
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 if (selectedImageUri != null) {
@@ -175,13 +189,65 @@ fun AddGanadoScreen(
                         )
                     }
                 }
+
+                // Añadir botones para selección de imagen/cámara al pie de la imagen
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    // Botón de Galería
+                    IconButton(
+                        onClick = {
+                            // Solicitar permisos y abrir galería
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                permissionLauncher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
+                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                permissionLauncher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))
+                            } else {
+                                permissionLauncher.launch(arrayOf(
+                                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                ))
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoLibrary,
+                            contentDescription = "Galería",
+                            tint = Color.White
+                        )
+                    }
+
+                    // Botón de Cámara
+                    IconButton(
+                        onClick = {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoCamera,
+                            contentDescription = "Cámara",
+                            tint = Color.White
+                        )
+                    }
+                }
             }
 
-            // Número de arete
+            // Número de arete (condicional según tipo)
             OutlinedTextField(
                 value = state.numeroArete,
                 onValueChange = { viewModel.onEvent(AddGanadoEvent.NumeroAreteChanged(it)) },
-                label = { Text("Número de Arete*") },
+                label = {
+                    Text(
+                        text = if (state.tipo == "becerro" || state.tipo == "becerra")
+                            "Número de Arete (opcional)"
+                        else "Número de Arete*"
+                    )
+                },
                 placeholder = { Text("Ej: 0712345678") },
                 singleLine = true,
                 isError = state.numeroAreteError != null,
@@ -201,20 +267,13 @@ fun AddGanadoScreen(
                         contentDescription = null
                     )
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged {
-                        if (!it.isFocused && state.numeroArete.length == 10) {
-                            viewModel.onEvent(AddGanadoEvent.CheckAreteExists)
-                        }
-                    },
+                modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Next
                 ),
                 keyboardActions = KeyboardActions(
                     onNext = {
-                        // Verificar duplicados cuando el usuario termina de ingresar
                         viewModel.onEvent(AddGanadoEvent.CheckAreteExists)
                         focusManager.moveFocus(FocusDirection.Down)
                     }

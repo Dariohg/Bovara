@@ -72,50 +72,60 @@ class GanadoUseCase(
         imagenUrl: String? = null,
         imagenesSecundarias: List<String>? = null
     ): Long {
-        // Validación del formato de arete (siempre inicia con 07 seguido de 8 números)
-        require(numeroArete.matches(Regex("^07\\d{8}$"))) {
-            "El número de arete debe iniciar con 07 seguido de 8 dígitos"
+        println("GanadoUseCase.saveGanado: Iniciando guardado")
+
+        // Validación condicional del formato de arete basada en tipo
+        val isBecerro = tipo == "becerro" || tipo == "becerra"
+
+        println("GanadoUseCase.saveGanado: isBecerro=$isBecerro, numeroArete='$numeroArete'")
+
+        // Si no es becerro/becerra, el arete es obligatorio
+        if (!isBecerro && numeroArete.isBlank()) {
+            println("GanadoUseCase.saveGanado: Error - arete obligatorio para no becerros")
+            throw IllegalArgumentException("El número de arete es obligatorio para $tipo")
         }
 
-        // Comprobar que el arete no exista ya (si es un nuevo registro)
-        if (id == 0 && areteExists(numeroArete)) {
-            throw IllegalArgumentException("El número de arete ya existe")
+        // Si se proporciona un arete (incluso para becerros), validar formato
+        if (numeroArete.isNotBlank() && !numeroArete.matches(Regex("^07\\d{8}$"))) {
+            println("GanadoUseCase.saveGanado: Error - formato de arete inválido")
+            throw IllegalArgumentException("El número de arete debe iniciar con 07 seguido de 8 dígitos")
+        }
+
+        // Comprobar que el arete no exista ya (si es un nuevo registro y se proporciona arete)
+        if (id == 0 && numeroArete.isNotBlank()) {
+            val exists = areteExists(numeroArete)
+            println("GanadoUseCase.saveGanado: Verificando arete existente: $exists")
+            if (exists) {
+                println("GanadoUseCase.saveGanado: Error - arete ya existe")
+                throw IllegalArgumentException("El número de arete ya existe")
+            }
         }
 
         // Validación del sexo
-        require(sexo in listOf("macho", "hembra")) {
-            "El sexo debe ser 'macho' o 'hembra'"
+        if (sexo !in listOf("macho", "hembra")) {
+            println("GanadoUseCase.saveGanado: Error - sexo inválido")
+            throw IllegalArgumentException("El sexo debe ser 'macho' o 'hembra'")
         }
 
         // Validación del tipo según el sexo
         when (sexo) {
-            "macho" -> require(tipo in listOf("toro", "torito", "becerro")) {
-                "Para machos, el tipo debe ser 'toro', 'torito' o 'becerro'"
+            "macho" -> if (tipo !in listOf("toro", "torito", "becerro")) {
+                println("GanadoUseCase.saveGanado: Error - tipo inválido para macho")
+                throw IllegalArgumentException("Para machos, el tipo debe ser 'toro', 'torito' o 'becerro'")
             }
-            "hembra" -> require(tipo in listOf("vaca", "becerra")) {
-                "Para hembras, el tipo debe ser 'vaca' o 'becerra'"
+            "hembra" -> if (tipo !in listOf("vaca", "becerra")) {
+                println("GanadoUseCase.saveGanado: Error - tipo inválido para hembra")
+                throw IllegalArgumentException("Para hembras, el tipo debe ser 'vaca' o 'becerra'")
             }
         }
 
         // Validación del estado
-        require(estado in listOf("activo", "vendido", "muerto")) {
-            "El estado debe ser 'activo', 'vendido' o 'muerto'"
+        if (estado !in listOf("activo", "vendido", "muerto")) {
+            println("GanadoUseCase.saveGanado: Error - estado inválido")
+            throw IllegalArgumentException("El estado debe ser 'activo', 'vendido' o 'muerto'")
         }
 
-        // Si es una cría y tiene madreId, validar que la madre exista
-        if (madreId != null) {
-            val madre = repository.getGanadoById(madreId).first()
-            if (madre == null) {
-                throw IllegalArgumentException("La madre seleccionada no existe")
-            }
-            // Ahora permitimos tanto "vaca" como "becerra" como posibles madres
-            if (madre.tipo != "vaca" && madre.tipo != "becerra") {
-                throw IllegalArgumentException("La madre debe ser de tipo 'vaca' o 'becerra'")
-            }
-            if (madre.estado != "activo") {
-                throw IllegalArgumentException("La madre debe estar activa")
-            }
-        }
+        println("GanadoUseCase.saveGanado: Todas las validaciones pasaron correctamente")
 
         val ganado = GanadoEntity(
             id = id,
@@ -130,9 +140,10 @@ class GanadoUseCase(
             estado = estado,
             imagenUrl = imagenUrl,
             imagenesSecundarias = imagenesSecundarias,
-            fechaRegistro = if (id == 0) Date() else Date() // Solo actualiza la fecha de registro si es nuevo
+            fechaRegistro = Date()
         )
 
+        println("GanadoUseCase.saveGanado: Entidad creada, guardando en repositorio")
         return repository.insertGanado(ganado)
     }
 

@@ -1,5 +1,6 @@
 package com.example.bovara.core.utils
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -90,6 +91,23 @@ object ImageUtils {
             BitmapFactory.decodeFile(file.absolutePath)
         } catch (e: Exception) {
             Log.e(TAG, "Error al cargar imagen: ${e.message}")
+            null
+        }
+    }
+
+    // En ImageUtils.kt añadir este método
+    fun createImageUri(context: Context): Uri? {
+        return try {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, "img_${System.currentTimeMillis()}.jpg")
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            }
+            context.contentResolver.insert(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                contentValues
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating image URI: ${e.message}")
             null
         }
     }

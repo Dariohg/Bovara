@@ -240,8 +240,7 @@ fun AddVacunaScreen(
             // Fecha de aplicación obligatoria
             OutlinedTextField(
                 value = state.fechaAplicacion?.let {
-                    // Mostrar exactamente la fecha guardada sin manipulaciones
-                    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)
+                    DateUtils.formatDate(it)
                 } ?: "",
                 onValueChange = { /* No editable directamente */ },
                 label = { Text("Fecha de Aplicación") },
@@ -314,15 +313,8 @@ fun AddVacunaScreen(
 
     // Date picker dialog
     if (showDatePicker) {
-
-        val displayCalendar = Calendar.getInstance()
-        // Si ya hay una fecha guardada, usarla
-        if (state.fechaAplicacion != null) {
-            displayCalendar.time = state.fechaAplicacion!!
-        }
-
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = displayCalendar.timeInMillis
+            initialSelectedDateMillis = state.fechaAplicacion?.time
         )
 
         DatePickerDialog(
@@ -331,10 +323,8 @@ fun AddVacunaScreen(
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            // Creamos un objeto Date con la fecha seleccionada
+                            // Simplemente crear una fecha a partir de los milisegundos seleccionados
                             val selectedDate = Date(millis)
-
-                            // Guardamos directamente esta fecha sin ninguna manipulación
                             viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(selectedDate))
                         }
                         showDatePicker = false

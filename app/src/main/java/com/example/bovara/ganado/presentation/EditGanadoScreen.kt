@@ -1,5 +1,13 @@
 package com.example.bovara.ganado.presentation
 
+import android.Manifest
+import android.net.Uri
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,18 +23,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.bovara.core.utils.DateUtils
+import com.example.bovara.core.utils.ImageUtils
 import com.example.bovara.di.AppModule
+import com.example.bovara.ganado.presentation.components.GenderOption
 import com.example.bovara.ganado.presentation.components.GenderOptionReadOnly
 import com.example.bovara.ganado.presentation.components.StatusOption
 import com.example.bovara.ganado.presentation.components.TypeOption
@@ -51,6 +66,71 @@ fun EditGanadoScreen(
     val scrollState = rememberScrollState()
 
     var showDatePicker by remember { mutableStateOf(false) }
+
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var tempImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedImageUri = it
+            // Guarda la ruta de la imagen en el estado
+            val imagePath = ImageUtils.saveImageToInternalStorage(context, it)
+            viewModel.onEvent(EditGanadoEvent.ImageUrlChanged(imagePath))
+        }
+    }
+    // Lanzador para la cámara
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempImageUri != null) {
+            // Guarda la ruta de la imagen en el estado
+            val imagePath = ImageUtils.saveImageToInternalStorage(context, tempImageUri!!)
+            viewModel.onEvent(EditGanadoEvent.ImageUrlChanged(imagePath))
+            selectedImageUri = tempImageUri
+        }
+    }
+
+// Lanzador para permisos de cámara
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Si el permiso es concedido, inicia la cámara
+            tempImageUri = ImageUtils.createImageUri(context)
+            tempImageUri?.let {
+                cameraLauncher.launch(it)
+            }
+        } else {
+            Toast.makeText(context, "Se necesita permiso de cámara", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Lanzador para solicitar permisos
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allPermissionsGranted = permissions.entries.all { it.value }
+        if (allPermissionsGranted) {
+            // Si los permisos son concedidos, abre la galería
+            imagePicker.launch("image/*")
+        } else {
+            Toast.makeText(context, "Se necesitan permisos para acceder a la galería", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(state.ganado?.imagenUrl) {
+        state.ganado?.imagenUrl?.let { url ->
+            // Cargar imagen existente en selectedImageUri
+            val bitmap = ImageUtils.loadImageFromInternalStorage(context, url)
+            bitmap?.let {
+                // Convertir bitmap a Uri (esta es una simplificación, necesitarás implementar esto)
+                // selectedImageUri = convertBitmapToUri(context, bitmap)
+            }
+        }
+    }
+
 
     Scaffold(
         topBar = {
@@ -133,23 +213,139 @@ fun EditGanadoScreen(
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
 
-                // El número de arete no se puede editar, solo mostrar
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Mostrar imagen existente o imagen seleccionada
+                    if (selectedImageUri != null) {
+                        // Mostrar imagen seleccionada
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Imagen del animal",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else if (state.ganado?.imagenUrl != null) {
+                        // Mostrar imagen existente
+                        val bitmap = remember(state.ganado?.imagenUrl) {
+                            ImageUtils.loadImageFromInternalStorage(context, state.ganado?.imagenUrl!!)
+                        }
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Imagen del animal",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            // Mostrar placeholder
+                            Icon(
+                                imageVector = Icons.Default.BrokenImage,
+                                contentDescription = "Imagen no disponible",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(64.dp)
+                            )
+                        }
+                    } else {
+                        // Mostrar placeholder
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = "Sin imagen",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(64.dp)
+                        )
+                    }
+
+                    // Añadir botones para selección de imagen/cámara al pie de la imagen
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        // Botón de Galería
+                        IconButton(
+                            onClick = {
+                                // Solicitar permisos
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    permissionLauncher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
+                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                    permissionLauncher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))
+                                } else {
+                                    permissionLauncher.launch(arrayOf(
+                                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                    ))
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PhotoLibrary,
+                                contentDescription = "Galería",
+                                tint = Color.White
+                            )
+                        }
+
+                        // Botón de Cámara
+                        IconButton(
+                            onClick = {
+                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PhotoCamera,
+                                contentDescription = "Cámara",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+
+                // Número de arete (condicional según tipo)
                 OutlinedTextField(
                     value = state.numeroArete,
-                    onValueChange = { /* No editable */ },
-                    label = { Text("Número de Arete") },
-                    readOnly = true,
-                    enabled = false,
+                    onValueChange = { viewModel.onEvent(EditGanadoEvent.NumeroAreteChanged(it)) },
+                    label = {
+                        Text(
+                            text = if (state.tipo == "becerro" || state.tipo == "becerra")
+                                "Número de Arete (opcional)"
+                            else "Número de Arete*"
+                        )
+                    },
+                    isError = state.numeroAreteError != null,
+                    supportingText = {
+                        if (state.numeroAreteError != null) {
+                            Text(
+                                text = state.numeroAreteError!!,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        } else {
+                            Text("Formato: 07 seguido de 8 dígitos")
+                        }
+                    },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Tag,
                             contentDescription = null
                         )
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
                 )
 
-                // Apodo (opcional)
                 OutlinedTextField(
                     value = state.apodo,
                     onValueChange = { viewModel.onEvent(EditGanadoEvent.ApodoChanged(it)) },
@@ -172,9 +368,10 @@ fun EditGanadoScreen(
                     )
                 )
 
-                // En edición, no se permite cambiar el sexo
+
+                // En edición, ya se permite cambiar el sexo
                 Text(
-                    text = "Sexo",
+                    text = "Sexo*",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -183,18 +380,28 @@ fun EditGanadoScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    GenderOptionReadOnly(
+                    GenderOption(
                         title = "Macho",
                         icon = Icons.Rounded.Male,
                         isSelected = state.sexo == "macho",
+                        onClick = { viewModel.onEvent(EditGanadoEvent.SexoChanged("macho")) },
                         modifier = Modifier.weight(1f)
                     )
 
-                    GenderOptionReadOnly(
+                    GenderOption(
                         title = "Hembra",
                         icon = Icons.Rounded.Female,
                         isSelected = state.sexo == "hembra",
+                        onClick = { viewModel.onEvent(EditGanadoEvent.SexoChanged("hembra")) },
                         modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (state.sexoError != null) {
+                    Text(
+                        text = state.sexoError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
 

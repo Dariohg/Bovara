@@ -94,8 +94,7 @@ class AddGanadoViewModel(
                 checkCanSave()
             }
             is AddGanadoEvent.FechaNacimientoChanged -> {
-                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.value)
-                _state.update { it.copy(fechaNacimiento = normalizedDate) }
+                _state.update { it.copy(fechaNacimiento = event.value) }
             }
             is AddGanadoEvent.EstadoChanged -> {
                 _state.update { it.copy(estado = event.value) }
@@ -116,12 +115,32 @@ class AddGanadoViewModel(
 
     private fun validateNumeroArete() {
         val numeroArete = _state.value.numeroArete
+        val tipo = _state.value.tipo
+        val originalNumeroArete = _state.value.ganado?.numeroArete
+
+        // Para becerros y becerras, el arete es opcional
+        val isBecerro = tipo == "becerro" || tipo == "becerra"
+
+        // Si es becerro/becerra y no se ingresó arete, no hay error
+        if (isBecerro && numeroArete.isBlank()) {
+            _state.update { it.copy(numeroAreteError = null) }
+            return
+        }
+
+        // Para los demás tipos o si se ingresó un arete (incluso para becerros)
         val error = when {
-            numeroArete.isBlank() -> "Número de arete requerido"
-            !numeroArete.matches(Regex("^07\\d{8}$")) -> "Formato incorrecto. Debe ser 07 seguido de 8 dígitos"
+            !isBecerro && numeroArete.isBlank() -> "Número de arete requerido"
+            numeroArete.isNotBlank() && !numeroArete.matches(Regex("^07\\d{8}$")) ->
+                "Formato incorrecto. Debe ser 07 seguido de 8 dígitos"
             else -> null
         }
+
         _state.update { it.copy(numeroAreteError = error) }
+
+        // Si cambió el arete, verificar que no exista
+        if (numeroArete != originalNumeroArete && numeroArete.isNotBlank()) {
+            checkAreteExists()
+        }
     }
 
     private fun checkAreteExists() {
@@ -191,8 +210,14 @@ class AddGanadoViewModel(
 
     private fun checkCanSave() {
         val state = _state.value
-        val canSave = state.numeroArete.isNotBlank() &&
-                state.numeroAreteError == null &&
+        val isBecerro = state.tipo == "becerro" || state.tipo == "becerra"
+
+        // Condiciones de validación dependiendo del tipo de animal
+        val areteValid = (isBecerro && state.numeroAreteError == null) ||
+                (!isBecerro && state.numeroArete.isNotBlank() && state.numeroAreteError == null)
+
+        // Para un nuevo animal, no verificamos cambios respecto a un estado anterior
+        val canSave = areteValid &&
                 state.sexo.isNotBlank() &&
                 state.sexoError == null &&
                 state.tipo.isNotBlank() &&
@@ -207,23 +232,60 @@ class AddGanadoViewModel(
         val state = _state.value
 
         // No guardar si hay errores o si ya está en proceso
-        if (!state.canSave || state.isLoading) return
+        println("Intentando guardar animal: canSave=${state.canSave}, isLoading=${state.isLoading}")
 
+        // No guardar si hay errores o si ya está en proceso
+        if (!state.canSave || state.isLoading) {
+            println("No se puede guardar: canSave=${state.canSave}, isLoading=${state.isLoading}")
+            return
+        }
         _state.update { it.copy(isLoading = true) }
+
+        println("Estado de carga activado")
+
 
         viewModelScope.launch {
             try {
-                // Verificar una última vez que el arete no exista
-                if (ganadoUseCase.areteExists(state.numeroArete)) {
+                // Si es becerro/becerra y no tiene arete, permitirlo
+                // Si no es becerro/becerra, o si tiene arete, verificar que sea único
+                val isBecerro = state.tipo == "becerro" || state.tipo == "becerra"
+                println("Es becerro/becerra: $isBecerro, Número arete: ${state.numeroArete}")
+
+                if (state.numeroArete.isNotBlank()) {
+
+                    // Verificar que el arete no exista si se proporciona uno
+                    val exists = ganadoUseCase.areteExists(state.numeroArete)
+                    println("Verificando si arete existe: $exists")
+
+                    // Verificar que el arete no exista si se proporciona uno
+                    if (ganadoUseCase.areteExists(state.numeroArete)) {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                numeroAreteError = "Este número de arete ya está registrado",
+                                canSave = false
+                            )
+                        }
+                        println("Error: Número de arete ya registrado")
+
+                        return@launch
+                    }
+                } else if (!isBecerro) {
+                    // Si no es becerro y no tiene arete, no debería llegar aquí
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            numeroAreteError = "Este número de arete ya está registrado",
+                            numeroAreteError = "Número de arete requerido",
                             canSave = false
                         )
                     }
+                    println("Error: Arete requerido para no becerros")
+
                     return@launch
                 }
+
+                println("Listo para guardar animal")
+
                 val fechaNacimiento = state.fechaNacimiento
 
                 // Llamar al caso de uso para guardar el ganado
@@ -233,11 +295,12 @@ class AddGanadoViewModel(
                     sexo = state.sexo,
                     tipo = state.tipo,
                     color = state.color,
-                    fechaNacimiento = fechaNacimiento,
+                    fechaNacimiento = state.fechaNacimiento,
                     estado = state.estado,
                     imagenUrl = state.imagenUrl,
-                    madreId = state.madreId // Ahora incluimos la madre
+                    madreId = state.madreId
                 )
+                println("Animal guardado con ID: $id")
 
                 // Si la cría fue guardada exitosamente y tiene madre, registrar en el historial de crianza
                 if (state.madreId != null && state.tipo in listOf("becerro", "becerra", "torito")) {
@@ -314,8 +377,9 @@ data class AddGanadoState(
     val vacasDisponibles: List<GanadoEntity> = emptyList(),
     val madreSeleccionada: GanadoEntity? = null,
     val madreId: Int? = null,
-    val mostrarSelectorMadre: Boolean = false
-)
+    val mostrarSelectorMadre: Boolean = false,
+    val ganado: GanadoEntity? = null,
+    )
 
 sealed class AddGanadoEvent {
     data class NumeroAreteChanged(val value: String) : AddGanadoEvent()

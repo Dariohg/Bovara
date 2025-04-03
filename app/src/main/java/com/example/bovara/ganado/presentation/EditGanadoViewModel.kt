@@ -81,15 +81,91 @@ class EditGanadoViewModel(
                 checkCanSave()
             }
             is EditGanadoEvent.FechaNacimientoChanged -> {
-                // Normalizar la fecha para evitar problemas de zona horaria
-                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.value)
-                _state.update { it.copy(fechaNacimiento = normalizedDate) }
+                _state.update { it.copy(fechaNacimiento = event.value) }
             }
             is EditGanadoEvent.EstadoChanged -> {
                 _state.update { it.copy(estado = event.value) }
             }
+            is EditGanadoEvent.NumeroAreteChanged -> {
+                _state.update { it.copy(numeroArete = event.value) }
+                validateNumeroArete()
+                checkCanSave()
+            }
+            is EditGanadoEvent.SexoChanged -> {
+                val newState = _state.value.copy(sexo = event.value)
+                // Si cambia el sexo, asegurarnos que el tipo es compatible
+                if ((event.value == "macho" && !listOf("toro", "torito", "becerro").contains(newState.tipo)) ||
+                    (event.value == "hembra" && !listOf("vaca", "becerra").contains(newState.tipo))) {
+                    // Resetear el tipo si no es compatible con el nuevo sexo
+                    _state.update { newState.copy(tipo = "") }
+                } else {
+                    _state.update { newState }
+                }
+                validateSexo()
+                checkCanSave()
+            }
+            is EditGanadoEvent.ImageUrlChanged -> {
+                _state.update { it.copy(imagenUrl = event.value) }
+            }
             is EditGanadoEvent.SaveGanado -> saveGanado()
         }
+    }
+
+
+    private fun validateNumeroArete() {
+        val numeroArete = _state.value.numeroArete
+        val originalNumeroArete = _state.value.ganado?.numeroArete
+
+        val error = when {
+            numeroArete.isBlank() -> "Número de arete requerido"
+            !numeroArete.matches(Regex("^07\\d{8}$")) -> "Formato incorrecto. Debe ser 07 seguido de 8 dígitos"
+            else -> null
+        }
+        _state.update { it.copy(numeroAreteError = error) }
+
+        // Si cambió el arete, verificar que no exista
+        if (numeroArete != originalNumeroArete) {
+            checkAreteExists()
+        }
+    }
+    private fun checkAreteExists() {
+        val numeroArete = _state.value.numeroArete
+        val originalNumeroArete = _state.value.ganado?.numeroArete
+
+        // Si el arete no cambió, no validamos
+        if (numeroArete == originalNumeroArete) return
+
+        viewModelScope.launch {
+            try {
+                val exists = ganadoUseCase.areteExists(numeroArete)
+                if (exists) {
+                    _state.update {
+                        it.copy(
+                            numeroAreteError = "Este número de arete ya está registrado",
+                            canSave = false
+                        )
+                    }
+                } else {
+                    _state.update {
+                        it.copy(numeroAreteError = null)
+                    }
+                    checkCanSave()
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Error al verificar el número de arete: ${e.message}")
+                }
+            }
+        }
+    }
+
+    private fun validateSexo() {
+        val sexo = _state.value.sexo
+        val error = when {
+            sexo.isBlank() -> "Seleccione el sexo del animal"
+            else -> null
+        }
+        _state.update { it.copy(sexoError = error) }
     }
 
     private fun validateTipo() {
@@ -145,6 +221,20 @@ class EditGanadoViewModel(
         viewModelScope.launch {
             try {
                 // Llamar al caso de uso para guardar el ganado
+
+                if (state.numeroArete != state.ganado.numeroArete) {
+                    if (ganadoUseCase.areteExists(state.numeroArete)) {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                numeroAreteError = "Este número de arete ya está registrado",
+                                canSave = false
+                            )
+                        }
+                        return@launch
+                    }
+                }
+
                 val id = ganadoUseCase.saveGanado(
                     id = ganadoId,
                     numeroArete = state.numeroArete,
@@ -156,7 +246,7 @@ class EditGanadoViewModel(
                     estado = state.estado,
                     cantidadCrias = state.ganado.cantidadCrias,
                     madreId = state.ganado.madreId,
-                    imagenUrl = state.ganado.imagenUrl,
+                    imagenUrl = state.imagenUrl ?: state.ganado.imagenUrl,
                     imagenesSecundarias = state.ganado.imagenesSecundarias
                 )
 
@@ -191,6 +281,9 @@ class EditGanadoViewModel(
 }
 
 data class EditGanadoState(
+    val numeroAreteError: String? = null,
+    val sexoError: String? = null,
+    val imagenUrl: String? = null,
     val ganado: GanadoEntity? = null,
     val numeroArete: String = "",
     val apodo: String = "",
@@ -209,6 +302,9 @@ data class EditGanadoState(
 )
 
 sealed class EditGanadoEvent {
+    data class NumeroAreteChanged(val value: String) : EditGanadoEvent()
+    data class SexoChanged(val value: String) : EditGanadoEvent()
+    data class ImageUrlChanged(val value: String) : EditGanadoEvent()
     data class ApodoChanged(val value: String) : EditGanadoEvent()
     data class TipoChanged(val value: String) : EditGanadoEvent()
     data class ColorChanged(val value: String) : EditGanadoEvent()

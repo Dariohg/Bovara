@@ -97,9 +97,7 @@ class AddVacunaViewModel(
                 _state.update { it.copy(fechaAplicacion = event.value) }
             }
             is AddVacunaEvent.FechaProgramadaChanged -> {
-                // Normalizar la fecha para evitar problemas de zona horaria
-                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.value)
-                _state.update { it.copy(fechaProgramada = normalizedDate) }
+                _state.update { it.copy(fechaProgramada = event.value) }
             }
             is AddVacunaEvent.RecordatorioChanged -> {
                 _state.update { it.copy(recordatorio = event.value) }

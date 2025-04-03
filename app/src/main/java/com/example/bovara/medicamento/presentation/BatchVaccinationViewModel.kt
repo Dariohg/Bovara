@@ -146,10 +146,8 @@ class BatchVaccinationViewModel(
             }
 
             is BatchVaccinationEvent.DateChanged -> {
-                // Normalizar la fecha para evitar problemas de zona horaria
-                val normalizedDate = DateUtils.normalizeDateToLocalMidnight(event.date)
                 _state.update { it.copy(
-                    fechaAplicacion = normalizedDate
+                    fechaAplicacion = it.fechaAplicacion
                 )}
             }
 
