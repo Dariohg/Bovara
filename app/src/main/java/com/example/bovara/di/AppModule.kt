@@ -8,6 +8,8 @@ import com.example.bovara.ganado.data.repository.GanadoRepository
 import com.example.bovara.ganado.domain.GanadoUseCase
 import com.example.bovara.medicamento.data.repository.MedicamentoRepository
 import com.example.bovara.medicamento.domain.MedicamentoUseCase
+import com.example.bovara.pendiente.data.repository.PendienteRepository
+import com.example.bovara.pendiente.domain.PendienteUseCase
 
 /**
  * Clase de utilidad para proporcionar las dependencias de la aplicación.
@@ -36,6 +38,8 @@ object AppModule {
         return GanadoRepository(provideAppDatabase(context).ganadoDao())
     }
 
+
+
     /**
      * Proporciona el caso de uso de ganado
      */
@@ -57,6 +61,14 @@ object AppModule {
         return MedicamentoUseCase(provideMedicamentoRepository(context))
     }
 
+    fun providePendienteUseCase(context: Context): PendienteUseCase {
+        return PendienteUseCase(providePendienteRepository(context))
+    }
+
+    fun providePendienteRepository(context: Context): PendienteRepository {
+        return PendienteRepository(provideAppDatabase(context).pendienteDao())
+    }
+
     /**
      * Proporciona el repositorio de crianza
      */
@@ -74,4 +86,6 @@ object AppModule {
             provideGanadoUseCase(context)
         )
     }
+
+
 }

@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+
 import com.example.bovara.di.AppModule
 import com.example.bovara.ganado.presentation.AddGanadoScreen
 import com.example.bovara.ganado.presentation.EditGanadoScreen
@@ -23,13 +24,16 @@ import com.example.bovara.medicamento.presentation.BatchVaccinationScreen
 import com.example.bovara.medicamento.presentation.RegisterMedicamentoScreen
 import com.example.bovara.medicamento.presentation.VaccinationHistoryScreen
 import com.example.bovara.medicamento.presentation.VacunasGanadoScreen
+import com.example.bovara.statistics.presentation.StatisticsScreen
 
 @Composable
 fun NavigationWrapper() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
+
     NavHost(navController = navController, startDestination = Screens.HOME) {
+
         // Home/Dashboard
         composable(route = Screens.HOME) {
             // Obtener las dependencias necesarias
@@ -62,6 +66,9 @@ fun NavigationWrapper() {
                 onNavigateToSearchResults = { query ->
                     // Pasar la consulta como argumento de navegación
                     navController.navigate("${Screens.GANADO_LIST_BY_CATEGORY}?query=$query")
+                },
+                onNavigateToStatistics = {
+                    navController.navigate(Screens.STATISTICS)
                 },
                 viewModel = homeViewModel
             )
@@ -320,6 +327,14 @@ fun NavigationWrapper() {
             LaunchedEffect(Unit) {
                 navController.popBackStack()
             }
+        }
+
+        composable(route = Screens.STATISTICS) {
+            StatisticsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

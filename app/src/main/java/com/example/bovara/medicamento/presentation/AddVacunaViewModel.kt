@@ -3,9 +3,10 @@ package com.example.bovara.medicamento.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.ganado.domain.GanadoUseCase
 import com.example.bovara.medicamento.domain.MedicamentoUseCase
+import com.example.bovara.pendiente.data.model.PendienteEntity
+import com.example.bovara.pendiente.domain.PendienteUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -16,7 +17,8 @@ import java.util.Date
 class AddVacunaViewModel(
     private val ganadoId: Int,
     private val medicamentoUseCase: MedicamentoUseCase,
-    private val ganadoUseCase: GanadoUseCase
+    private val ganadoUseCase: GanadoUseCase,
+    private val pendienteUseCase: PendienteUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AddVacunaState())
@@ -186,85 +188,57 @@ class AddVacunaViewModel(
             try {
                 val dosis = state.dosisML.toFloatOrNull() ?: 0f
 
+                val idMedicina = medicamentoUseCase.saveMedicamento(
+                    nombre = state.nombre,
+                    descripcion = state.descripcion,
+                    fechaAplicacion = state.fechaAplicacion ?: Date(),
+                    dosisML = dosis,
+                    ganadoId = ganadoId,
+                    tipo = state.tipo,
+                    esProgramado = false,
+                    aplicado = true,
+                    notas = state.notas.takeIf { it.isNotBlank() }
+                )
                 if (state.esMultipleAplicacion && state.numeroAplicaciones > 1) {
-                    // Guardamos la primera aplicación como aplicada
-                    val idPrimeraAplicacion = medicamentoUseCase.saveMedicamento(
-                        nombre = state.nombre,
-                        descripcion = state.descripcion,
-                        fechaAplicacion = state.fechaAplicacion ?: Date(),
-                        dosisML = dosis,
-                        ganadoId = ganadoId,
-                        tipo = state.tipo,
-                        esProgramado = false,
-                        aplicado = true,
-                        notas = "${state.notas?.takeIf { it.isNotBlank() } ?: ""}\nAplicación 1 de ${state.numeroAplicaciones}"
-                    )
-
-                    // Programamos las siguientes aplicaciones
                     for (i in 2..state.numeroAplicaciones) {
-                        // Calculamos la fecha de la próxima aplicación
                         val fechaProxima = Calendar.getInstance().apply {
                             time = state.fechaAplicacion ?: Date()
                             add(Calendar.DAY_OF_YEAR, state.intervaloEnDias * (i - 1))
 
-                            // Ajustamos la hora si se especificó
                             state.horaAplicacion?.let { hora ->
                                 val calHora = Calendar.getInstance().apply { time = hora }
                                 set(Calendar.HOUR_OF_DAY, calHora.get(Calendar.HOUR_OF_DAY))
                                 set(Calendar.MINUTE, calHora.get(Calendar.MINUTE))
+                                set(Calendar.SECOND, 0) // Asegurarse de que los segundos sean 0
+                                set(Calendar.MILLISECOND, 0) // Asegurarse de que los milisegundos sean 0
                             }
                         }.time
 
-                        medicamentoUseCase.saveMedicamento(
-                            nombre = state.nombre,
-                            descripcion = state.descripcion,
-                            fechaAplicacion = Date(), // Fecha actual como referencia
+                        // Crear el objeto PendienteEntity y guardarlo
+                        val pendiente = PendienteEntity(
+                            idMedicina = idMedicina,
                             fechaProgramada = fechaProxima,
-                            dosisML = dosis,
-                            ganadoId = ganadoId,
-                            tipo = state.tipo,
-                            esProgramado = true,
-                            aplicado = false,
-                            recordatorio = true,
-                            notas = "${state.notas?.takeIf { it.isNotBlank() } ?: ""}\nAplicación $i de ${state.numeroAplicaciones}"
+                            hora = state.horaAplicacion.toString(), // Usa la hora si está definida
+                            estatus = "pendiente"
                         )
+                        pendienteUseCase.insertar(pendiente)
                     }
-                } else {
-                    // Si es aplicación única, guardamos normalmente
-                    medicamentoUseCase.saveMedicamento(
-                        nombre = state.nombre,
-                        descripcion = state.descripcion,
-                        fechaAplicacion = state.fechaAplicacion ?: Date(),
-                        dosisML = dosis,
-                        ganadoId = ganadoId,
-                        tipo = state.tipo,
-                        esProgramado = false,
-                        aplicado = true,
-                        notas = state.notas.takeIf { it.isNotBlank() }
-                    )
                 }
 
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        savedSuccessfully = true
-                    )
-                }
+
+                _state.update { it.copy(isLoading = false, savedSuccessfully = true) }
             } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Error al guardar el medicamento"
-                    )
-                }
+                _state.update { it.copy(isLoading = false, error = e.message ?: "Error al guardar el medicamento") }
             }
         }
     }
 
+
     class Factory(
         private val ganadoId: Int,
         private val medicamentoUseCase: MedicamentoUseCase,
-        private val ganadoUseCase: GanadoUseCase
+        private val ganadoUseCase: GanadoUseCase,
+        private val pendienteUseCase: PendienteUseCase
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -272,7 +246,8 @@ class AddVacunaViewModel(
                 return AddVacunaViewModel(
                     ganadoId,
                     medicamentoUseCase,
-                    ganadoUseCase
+                    ganadoUseCase,
+                    pendienteUseCase
                 ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")

@@ -8,6 +8,7 @@ import com.example.bovara.ganado.data.repository.GanadoRepository
 import com.example.bovara.ganado.domain.GanadoUseCase
 import com.example.bovara.medicamento.data.repository.MedicamentoRepository
 import com.example.bovara.medicamento.domain.MedicamentoUseCase
+import com.example.bovara.pendiente.data.repository.PendienteRepository
 
 /**
  * Clase que proporciona las dependencias de la aplicación mediante un enfoque de
@@ -15,12 +16,14 @@ import com.example.bovara.medicamento.domain.MedicamentoUseCase
  */
 object AppDependencies {
 
+    val pendienteRepository: PendienteRepository? =null
+
     // Objetos singleton para las dependencias principales
     private var appDatabase: AppDatabase? = null
 
     // Repositorios
-    private var ganadoRepository: GanadoRepository? = null
-    private var medicamentoRepository: MedicamentoRepository? = null
+    var ganadoRepository: GanadoRepository? = null
+    var medicamentoRepository: MedicamentoRepository? = null
     private var crianzaRepository: CrianzaRepository? = null
 
     // Casos de uso
@@ -90,6 +93,10 @@ object AppDependencies {
             }
         }
     }
+
+
+
+
 
     /**
      * Obtiene el repositorio de crianza

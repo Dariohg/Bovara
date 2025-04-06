@@ -13,6 +13,8 @@ import com.example.bovara.medicamento.data.datasource.MedicamentoDao
 import com.example.bovara.medicamento.data.model.MedicamentoEntity
 import com.example.bovara.crianza.data.datasource.CrianzaDao
 import com.example.bovara.crianza.data.model.CrianzaEntity
+import com.example.bovara.pendiente.data.datasource.PendienteDao
+import com.example.bovara.pendiente.data.model.PendienteEntity
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -22,9 +24,10 @@ import java.util.concurrent.Executors
     entities = [
         GanadoEntity::class,
         MedicamentoEntity::class,
-        CrianzaEntity::class
+        CrianzaEntity::class,
+        PendienteEntity::class
     ],
-    version = 3,
+    version = 4, // Incrementamos la versión de la BD
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -32,6 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ganadoDao(): GanadoDao
     abstract fun medicamentoDao(): MedicamentoDao
     abstract fun crianzaDao(): CrianzaDao
+    abstract fun pendienteDao(): PendienteDao // Nuevo DAO agregado
 
     companion object {
         @Volatile

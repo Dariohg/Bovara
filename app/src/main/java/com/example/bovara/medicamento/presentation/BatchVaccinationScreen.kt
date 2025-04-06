@@ -624,7 +624,7 @@ fun BatchVaccinationScreen(
     if (showDatePicker) {
         // Al inicializar el DatePicker, restamos DOS días
         val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
+        //calendar.add(Calendar.DAY_OF_MONTH, -1)
 
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = calendar.timeInMillis

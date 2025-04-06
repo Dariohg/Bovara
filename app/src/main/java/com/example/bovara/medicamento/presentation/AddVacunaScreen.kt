@@ -44,9 +44,10 @@ fun AddVacunaScreen(
     val context = LocalContext.current
     val medicamentoUseCase = AppModule.provideMedicamentoUseCase(context)
     val ganadoUseCase = AppModule.provideGanadoUseCase(context)
+    val pendienteUseCase = AppModule.providePendienteUseCase(context)
 
     val viewModel: AddVacunaViewModel = viewModel(
-        factory = AddVacunaViewModel.Factory(ganadoId, medicamentoUseCase, ganadoUseCase)
+        factory = AddVacunaViewModel.Factory(ganadoId, medicamentoUseCase, ganadoUseCase, pendienteUseCase)
     )
 
     val state by viewModel.state.collectAsState()
@@ -509,19 +510,34 @@ fun AddVacunaScreen(
 
     // Date picker dialog
     if (showDatePicker) {
+        val displayCalendar = Calendar.getInstance()
+        
+        // Si ya hay una fecha guardada, usarla y restarle 1 día para la visualización
+        if (state.fechaAplicacion != null) {
+            displayCalendar.time = state.fechaAplicacion!!
+            //displayCalendar.add(Calendar.DAY_OF_MONTH, -1) // Restar un día
+        }
+    
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.fechaAplicacion?.time
+            initialSelectedDateMillis = displayCalendar.timeInMillis
         )
-
+    
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            // Simplemente crear una fecha a partir de los milisegundos seleccionados
+                            // Creamos un objeto Date con la fecha seleccionada
                             val selectedDate = Date(millis)
-                            viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(selectedDate))
+    
+                            // Ajustamos la fecha sumando el día que restamos antes
+                            val adjustedCalendar = Calendar.getInstance().apply {
+                                time = selectedDate
+                                add(Calendar.DAY_OF_MONTH, 1) // Sumar el día nuevamente
+                            }
+    
+                            viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(adjustedCalendar.time))
                         }
                         showDatePicker = false
                     }

@@ -107,6 +107,7 @@ fun AddGanadoScreen(
             viewModel.onEvent(AddGanadoEvent.ImageUrlChanged(imagePath))
             selectedImageUri = tempImageUri
         }
+
     }
 
 // Lanzador para permisos de cámara
@@ -580,8 +581,7 @@ fun AddGanadoScreen(
             // Si no hay fecha (es null), usamos la fecha actual, pero restamos un día para compensar
             initialSelectedDateMillis = state.fechaNacimiento?.time ?: run {
                 val calendar = Calendar.getInstance()
-                calendar.add(Calendar.DAY_OF_MONTH, -1) // Restar un día a la fecha actual
-                calendar.timeInMillis
+                calendar.timeInMillis  // Usar la fecha actual sin modificaciones
             }
         )
 
@@ -591,8 +591,16 @@ fun AddGanadoScreen(
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            val date = Date(millis)
-                            viewModel.onEvent(AddGanadoEvent.FechaNacimientoChanged(date))
+                            val calendar = Calendar.getInstance().apply {
+                                timeInMillis = millis
+                                add(Calendar.DAY_OF_MONTH, 1)  // Sumar un día
+                            }
+
+                            // Convertir la fecha ajustada a un objeto Date
+                            val adjustedDate = calendar.time
+
+                            // Enviar el evento con la nueva fecha
+                            viewModel.onEvent(AddGanadoEvent.FechaNacimientoChanged(adjustedDate))
                         }
                         showDatePicker = false
                     }
