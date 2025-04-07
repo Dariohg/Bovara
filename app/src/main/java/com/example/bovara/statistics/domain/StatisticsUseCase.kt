@@ -1,20 +1,16 @@
 package com.example.bovara.statistics.domain
 
+import com.example.bovara.ganado.data.model.GanadoEstadistica
 import com.example.bovara.statistics.data.model.Respaldo
-import com.example.bovara.statistics.data.repository.StatisticsRepository
+import com.example.bovara.statistics.data.model.RespaldoRequest
+import kotlinx.coroutines.flow.Flow
 
 interface StatisticsUseCase {
-    suspend fun getRespaldos(): List<Respaldo>
-    suspend fun createRespaldo(): Boolean
+    suspend fun getGanadoEstadisticas(): GanadoEstadistica
+    suspend fun getGanadoEstadisticasFlow(): Flow<GanadoEstadistica>
+
+    // Métodos para gestionar respaldos
+    suspend fun getBackups(): List<Respaldo>
+    suspend fun createBackup(request: RespaldoRequest): Respaldo
 }
 
-class StatisticsUseCaseImpl(private val repository: StatisticsRepository) : StatisticsUseCase {
-
-    override suspend fun getRespaldos(): List<Respaldo> {
-        return repository.getRespaldos()
-    }
-
-    override suspend fun createRespaldo(): Boolean {
-        return repository.createRespaldo()
-    }
-}

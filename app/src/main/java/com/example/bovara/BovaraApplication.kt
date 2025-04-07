@@ -1,9 +1,10 @@
 package com.example.bovara
 
 import android.app.Application
-import com.example.bovara.core.notification.NotificationByHourService
+import android.content.Intent
+import com.example.bovara.core.service.ServiceByDay
+import com.example.bovara.core.service.ServiceByHour
 import com.example.bovara.di.AppDependencies
-import com.example.bovara.core.notification.NotificationService
 
 class BovaraApplication : Application() {
 
@@ -11,10 +12,11 @@ class BovaraApplication : Application() {
         super.onCreate()
         AppDependencies.initialize(applicationContext)
 
-        if (NotificationService.canScheduleExactAlarms(applicationContext)) {
-            NotificationService.startService(applicationContext)
-            NotificationByHourService.startService(applicationContext)
-        }
+        val serviceByHourIntent = Intent(applicationContext, ServiceByHour::class.java)
+        startService(serviceByHourIntent)
+
+        val serviceByDayIntent = Intent(applicationContext, ServiceByDay::class.java)
+        startService(serviceByDayIntent)
     }
 }
 

@@ -330,10 +330,13 @@ fun NavigationWrapper() {
         }
 
         composable(route = Screens.STATISTICS) {
+            val ganadoUseCase = AppModule.provideGanadoUseCase(context)
+
             StatisticsScreen(
                 onNavigateBack = {
                     navController.popBackStack()
-                }
+                },
+                ganadoUseCase = ganadoUseCase
             )
         }
     }

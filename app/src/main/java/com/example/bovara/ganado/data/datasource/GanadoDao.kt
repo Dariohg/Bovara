@@ -44,4 +44,30 @@ interface GanadoDao {
 
     @Delete
     suspend fun deleteGanado(ganado: GanadoEntity)
+
+    @Query("SELECT tipo, COUNT(*) as cantidad FROM ganado WHERE sexo = 'macho' GROUP BY tipo")
+    suspend fun obtenerDetalleMachos(): List<TipoConteo>
+
+    @Query("SELECT tipo, COUNT(*) as cantidad FROM ganado WHERE sexo = 'hembra' GROUP BY tipo")
+    suspend fun obtenerDetalleHembras(): List<TipoConteo>
+
+    @Query("SELECT COUNT(*) FROM ganado WHERE sexo = 'macho'")
+    suspend fun contarMachos(): Int
+
+    @Query("SELECT COUNT(*) FROM ganado WHERE sexo = 'hembra'")
+    suspend fun contarHembras(): Int
+
+    @Query("SELECT estado, COUNT(*) as cantidad FROM ganado GROUP BY estado")
+    suspend fun obtenerEstadoAnimales(): List<EstadoConteo>
+
 }
+
+data class TipoConteo(
+    val tipo: String,
+    val cantidad: Int
+)
+
+data class EstadoConteo(
+    val estado: String,
+    val cantidad: Int
+)

@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.bovara.ganado.domain.GanadoUseCase
 import com.example.bovara.statistics.StatisticsModule
 import com.example.bovara.statistics.data.model.Respaldo
 import com.example.bovara.statistics.presentation.components.*
@@ -25,8 +26,11 @@ import java.util.*
 @Composable
 fun StatisticsScreen(
     onNavigateBack: () -> Unit,
+    ganadoUseCase: GanadoUseCase,
     connectivityChecker: ConnectivityChecker = ConnectivityChecker(),
-    viewModel: StatisticsViewModel = viewModel(factory = StatisticsViewModel.Factory(StatisticsModule.provideStatisticsUseCase()))
+    viewModel: StatisticsViewModel = viewModel(
+        factory = StatisticsModule.provideStatisticsViewModelFactory(ganadoUseCase)
+    )
 ) {
     var isConnected by remember { mutableStateOf(false) }
     val context = LocalContext.current

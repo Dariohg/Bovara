@@ -2,6 +2,7 @@ package com.example.bovara.ganado.domain
 
 import com.example.bovara.crianza.domain.CrianzaUseCase
 import com.example.bovara.ganado.data.model.GanadoEntity
+import com.example.bovara.ganado.data.model.GanadoEstadistica
 import com.example.bovara.ganado.data.repository.GanadoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -154,4 +155,9 @@ class GanadoUseCase(
     suspend fun actualizarEstado(ganadoId: Int, nuevoEstado: String) = repository.actualizarEstado(ganadoId, nuevoEstado)
 
     suspend fun deleteGanado(ganado: GanadoEntity) = repository.deleteGanado(ganado)
+
+    suspend fun obtenerEstadisticasGanado(): GanadoEstadistica {
+        return repository.obtenerEstadisticas()
+    }
+
 }

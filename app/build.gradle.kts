@@ -39,6 +39,9 @@ android {
         compose = true
     }
 }
+configurations.all {
+    exclude(group = "xmlpull", module = "xmlpull")
+}
 
 dependencies {
     // Core Android
@@ -74,6 +77,8 @@ dependencies {
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation(libs.com.squareup.retrofit2.retrofit)
+    implementation(libs.com.squareup.retrofit2.converter.json)
 
     // Testing
     testImplementation(libs.junit)

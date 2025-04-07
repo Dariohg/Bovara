@@ -15,14 +15,15 @@ import java.util.Date
 data class PendienteCompleto(
     val pendiente: PendienteEntity,
     val medicina: MedicamentoEntity?,
-    val ganado: GanadoEntity?
+    val ganado: GanadoEntity?,
+    val diasFaltantes: Int? // Agregamos esta propiedad
 )
-
 data class PendientesFiltradosPorFecha(
     val futuros: List<PendienteCompleto>,
     val pasados: List<PendienteCompleto>,
     val mismoDia: List<PendienteCompleto>
 )
+
 
 class PendienteCompletoUseCase(
     private val pendienteUseCase: PendienteUseCase,
@@ -41,13 +42,27 @@ class PendienteCompletoUseCase(
                     ganadoUseCase.getGanadoById(idGanado).firstOrNull()
                 }
 
+                val diasFaltantes = calcularDiasFaltantes(pendiente.fechaProgramada)
+
                 PendienteCompleto(
                     pendiente = pendiente,
                     medicina = medicamento,
-                    ganado = ganado
+                    ganado = ganado,
+                    diasFaltantes = diasFaltantes
                 )
             }
         }
+    }
+
+    // Función para calcular los días faltantes
+    private fun calcularDiasFaltantes(fechaPendiente: Date): Int {
+        val calPendiente = Calendar.getInstance().apply { time = fechaPendiente }
+        val calHoy = Calendar.getInstance()
+
+        val diff = calPendiente.timeInMillis - calHoy.timeInMillis
+        val diasFaltantes = (diff / (1000 * 60 * 60 * 24)).toInt() // Días restantes
+
+        return diasFaltantes
     }
 
     suspend fun obtenerPendientesCompletosFiltradosPorFecha(
@@ -65,10 +80,23 @@ class PendienteCompletoUseCase(
         filtrados.forEach { pendienteCompleto ->
             val fechaPendiente = pendienteCompleto.pendiente.fechaProgramada
 
+            // Modificamos la lógica para evitar duplicados en día cero
             when {
-                esMismoDia(fechaPendiente, calRef) -> mismos.add(pendienteCompleto)
-                fechaPendiente.before(calRef.time) -> pasados.add(pendienteCompleto)
-                fechaPendiente.after(calRef.time) -> futuros.add(pendienteCompleto)
+                esMismoDia(fechaPendiente, calRef) -> {
+                    // Si es el mismo día, solo lo agregamos a "mismos"
+                    mismos.add(pendienteCompleto)
+                }
+                fechaPendiente.before(calRef.time) -> {
+                    // Si es anterior, lo agregamos a "pasados"
+                    pasados.add(pendienteCompleto)
+                }
+                else -> {
+                    // Si es posterior y NO es el mismo día, lo agregamos a "futuros"
+                    // Verificamos que no sea día cero (0 días faltantes)
+                    if (pendienteCompleto.diasFaltantes == null || pendienteCompleto.diasFaltantes > 0) {
+                        futuros.add(pendienteCompleto)
+                    }
+                }
             }
         }
 
@@ -96,7 +124,7 @@ class PendienteCompletoUseCase(
             val fechaPendiente = pendienteCompleto.pendiente.fechaProgramada
             rangos.any { (inicio, fin) ->
                 fechaPendiente in inicio..fin
-            }
+            } && pendienteCompleto.diasFaltantes != null
         }
     }
 
@@ -128,3 +156,4 @@ class PendienteCompletoUseCase(
                 calFecha.get(Calendar.DAY_OF_YEAR) == calRef.get(Calendar.DAY_OF_YEAR)
     }
 }
+
