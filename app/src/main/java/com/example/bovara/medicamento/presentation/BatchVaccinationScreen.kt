@@ -561,7 +561,7 @@ fun BatchVaccinationScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Botón de pausar
-                    OutlinedButton(
+                    {/*OutlinedButton(
                         onClick = { showConfirmPause = true },
                         modifier = Modifier
                             .weight(1f)
@@ -576,7 +576,7 @@ fun BatchVaccinationScreen(
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Text("Pausar")
-                    }
+                    }*/}
 
                     // Botón de finalizar
                     Button(
