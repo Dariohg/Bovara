@@ -35,7 +35,7 @@ class ServiceByDay : Service() {
                 Log.d("NotificationByDayService", "Servicio activado y ejecutando tareas.")
                 obtenerPendientes()
 
-                handler.postDelayed(this, 90000)  // El servicio se ejecuta cada 90 segundos
+                handler.postDelayed(this, 14400000)//esto se ejecuta cada cuatro horas
             }
         }
     }

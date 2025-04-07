@@ -14,6 +14,7 @@ import android.Manifest
 import android.util.Log
 import com.example.bovara.MainActivity
 import com.example.bovara.R
+import com.example.bovara.core.notification.helper.AccionHandler
 import com.example.bovara.core.notification.helper.PendienteCompleto
 import com.example.bovara.core.notification.helper.PendienteCompletoConHora
 import com.example.bovara.core.notification.helper.PendientesFiltradosPorFecha
@@ -150,7 +151,8 @@ class NotificationHelper(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
-        // Action button intent
+        AccionHandler.accionPorHora(pendiente)
+
         val actionIntent = Intent(context, MainActivity::class.java).apply {
             action = "MARK_COMPLETED"
             putExtra("PENDIENTE_ID", pendiente.pendiente.id)
@@ -188,7 +190,8 @@ class NotificationHelper(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
-        // Action button intent
+        AccionHandler.accionPorHora(pendiente)
+
         val actionIntent = Intent(context, MainActivity::class.java).apply {
             action = "MARK_COMPLETED"
             putExtra("PENDIENTE_ID", pendiente.pendiente.id)
@@ -253,7 +256,7 @@ class NotificationHelper(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
-        // Action button intent
+        AccionHandler.accionPorFecha(pendiente)
         val actionIntent = Intent(context, MainActivity::class.java).apply {
             action = "MARK_COMPLETED"
             putExtra("PENDIENTE_ID", pendiente.pendiente.id)
@@ -291,7 +294,8 @@ class NotificationHelper(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
-        // Action button intent
+        AccionHandler.accionPorFecha(pendiente)
+
         val actionIntent = Intent(context, MainActivity::class.java).apply {
             action = "MARK_COMPLETED"
             putExtra("PENDIENTE_ID", pendiente.pendiente.id)
