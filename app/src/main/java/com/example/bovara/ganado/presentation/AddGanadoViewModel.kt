@@ -3,8 +3,6 @@ package com.example.bovara.ganado.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.bovara.core.utils.DateDebugger
-import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.ganado.data.model.GanadoEntity
 import com.example.bovara.ganado.domain.GanadoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -115,19 +113,11 @@ class AddGanadoViewModel(
 
     private fun validateNumeroArete() {
         val numeroArete = _state.value.numeroArete
-        val tipo = _state.value.tipo
         val originalNumeroArete = _state.value.ganado?.numeroArete
+        val tipo = _state.value.tipo
 
-        // Para becerros y becerras, el arete es opcional
         val isBecerro = tipo == "becerro" || tipo == "becerra"
 
-        // Si es becerro/becerra y no se ingresó arete, no hay error
-        if (isBecerro && numeroArete.isBlank()) {
-            _state.update { it.copy(numeroAreteError = null) }
-            return
-        }
-
-        // Para los demás tipos o si se ingresó un arete (incluso para becerros)
         val error = when {
             !isBecerro && numeroArete.isBlank() -> "Número de arete requerido"
             numeroArete.isNotBlank() && !numeroArete.matches(Regex("^07\\d{8}$")) ->
@@ -137,7 +127,6 @@ class AddGanadoViewModel(
 
         _state.update { it.copy(numeroAreteError = error) }
 
-        // Si cambió el arete, verificar que no exista
         if (numeroArete != originalNumeroArete && numeroArete.isNotBlank()) {
             checkAreteExists()
         }
@@ -210,20 +199,26 @@ class AddGanadoViewModel(
 
     private fun checkCanSave() {
         val state = _state.value
+        val hasChanges = state.ganado != null && (
+                state.apodo != (state.ganado.apodo ?: "") ||
+                        state.tipo != state.ganado.tipo ||
+                        state.color != state.ganado.color ||
+                        state.fechaNacimiento != state.ganado.fechaNacimiento ||
+                        state.estado != state.ganado.estado ||
+                        state.numeroArete != state.ganado.numeroArete
+                )
+
         val isBecerro = state.tipo == "becerro" || state.tipo == "becerra"
 
-        // Condiciones de validación dependiendo del tipo de animal
-        val areteValid = (isBecerro && state.numeroAreteError == null) ||
-                (!isBecerro && state.numeroArete.isNotBlank() && state.numeroAreteError == null)
+        val areteValido = (isBecerro || (!isBecerro && state.numeroArete.isNotBlank())) &&
+                state.numeroAreteError == null
 
-        // Para un nuevo animal, no verificamos cambios respecto a un estado anterior
-        val canSave = areteValid &&
-                state.sexo.isNotBlank() &&
-                state.sexoError == null &&
+        val canSave = hasChanges &&
                 state.tipo.isNotBlank() &&
                 state.tipoError == null &&
                 state.color.isNotBlank() &&
-                state.colorError == null
+                state.colorError == null &&
+                areteValido
 
         _state.update { it.copy(canSave = canSave) }
     }

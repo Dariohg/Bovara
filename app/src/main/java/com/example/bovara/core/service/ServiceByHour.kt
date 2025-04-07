@@ -94,6 +94,9 @@ class ServiceByHour : Service() {
                 // Show notifications
                 CoroutineScope(Dispatchers.Main).launch {
                     notificationHelper.showHourNotifications(pendientesFiltrados)
+                    pendientesFiltrados.futuros.clear()
+                    pendientesFiltrados.pasados.clear()
+                    pendientesFiltrados.mismoDia.clear()
                 }
 
             } catch (e: Exception) {

@@ -1,6 +1,5 @@
 package com.example.bovara.medicamento.presentation
 
-import android.app.TimePickerDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -30,7 +29,6 @@ import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.di.AppModule
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.TimePicker
 
@@ -55,6 +53,16 @@ fun AddVacunaScreen(
     val scrollState = rememberScrollState()
 
     var showDatePicker by remember { mutableStateOf(false) }
+
+    // Para el campo de número de aplicaciones
+    var numeroAplicacionesText by remember {
+        mutableStateOf(if (state.numeroAplicaciones > 0) state.numeroAplicaciones.toString() else "")
+    }
+
+    // Para el campo de intervalo en días
+    var intervaloEnDiasText by remember {
+        mutableStateOf(if (state.intervaloEnDias > 0) state.intervaloEnDias.toString() else "")
+    }
 
     // Al iniciar la pantalla, asegurarse de que esté marcado como aplicado y no programado
     LaunchedEffect(key1 = Unit) {
@@ -285,20 +293,23 @@ fun AddVacunaScreen(
                 )
             }
             if (state.esMultipleAplicacion) {
-                // Número de aplicaciones
+                // Campo de número de aplicaciones
                 OutlinedTextField(
-                    value = state.numeroAplicaciones.toString(),
-                    onValueChange = {
-                        try {
-                            val num = it.toIntOrNull() ?: 1
-                            if (num > 0) {
-                                viewModel.onEvent(AddVacunaEvent.NumeroAplicacionesChanged(num))
+                    value = numeroAplicacionesText,
+                    onValueChange = { newValue ->
+                        numeroAplicacionesText = newValue
+                        if (newValue.isEmpty()) {
+                            // No hacer nada si está vacío, mantener campo vacío
+                        } else {
+                            // Intenta convertir a número sólo si hay algún valor
+                            newValue.toIntOrNull()?.let { num ->
+                                if (num > 0) {
+                                    viewModel.onEvent(AddVacunaEvent.NumeroAplicacionesChanged(num))
+                                }
                             }
-                        } catch (e: Exception) {
-                            // Ignorar entrada inválida
                         }
                     },
-                    label = { Text("Número de aplicaciones*") },
+                    label = { Text("Número de aplicaciones") },
                     singleLine = true,
                     leadingIcon = {
                         Icon(
@@ -316,20 +327,23 @@ fun AddVacunaScreen(
                     )
                 )
 
-                // Intervalo en días
+                // Campo de intervalo en días
                 OutlinedTextField(
-                    value = state.intervaloEnDias.toString(),
-                    onValueChange = {
-                        try {
-                            val num = it.toIntOrNull() ?: 0
-                            if (num >= 0) {
-                                viewModel.onEvent(AddVacunaEvent.IntervaloEnDiasChanged(num))
+                    value = intervaloEnDiasText,
+                    onValueChange = { newValue ->
+                        intervaloEnDiasText = newValue
+                        if (newValue.isEmpty()) {
+                            // No hacer nada si está vacío, mantener campo vacío
+                        } else {
+                            // Intenta convertir a número sólo si hay algún valor
+                            newValue.toIntOrNull()?.let { num ->
+                                if (num >= 0) {
+                                    viewModel.onEvent(AddVacunaEvent.IntervaloEnDiasChanged(num))
+                                }
                             }
-                        } catch (e: Exception) {
-                            // Ignorar entrada inválida
                         }
                     },
-                    label = { Text("Intervalo en días*") },
+                    label = { Text("Intervalo en días") },
                     placeholder = { Text("Ej: 2 (para aplicar cada 2 días)") },
                     singleLine = true,
                     leadingIcon = {
@@ -511,17 +525,17 @@ fun AddVacunaScreen(
     // Date picker dialog
     if (showDatePicker) {
         val displayCalendar = Calendar.getInstance()
-        
+
         // Si ya hay una fecha guardada, usarla y restarle 1 día para la visualización
         if (state.fechaAplicacion != null) {
             displayCalendar.time = state.fechaAplicacion!!
             //displayCalendar.add(Calendar.DAY_OF_MONTH, -1) // Restar un día
         }
-    
+
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = displayCalendar.timeInMillis
         )
-    
+
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
@@ -530,13 +544,13 @@ fun AddVacunaScreen(
                         datePickerState.selectedDateMillis?.let { millis ->
                             // Creamos un objeto Date con la fecha seleccionada
                             val selectedDate = Date(millis)
-    
+
                             // Ajustamos la fecha sumando el día que restamos antes
                             val adjustedCalendar = Calendar.getInstance().apply {
                                 time = selectedDate
                                 add(Calendar.DAY_OF_MONTH, 1) // Sumar el día nuevamente
                             }
-    
+
                             viewModel.onEvent(AddVacunaEvent.FechaAplicacionChanged(adjustedCalendar.time))
                         }
                         showDatePicker = false

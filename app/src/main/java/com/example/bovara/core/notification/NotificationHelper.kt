@@ -71,7 +71,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     // Notification for hour-based events
-    fun showHourNotifications(pendientesFiltrados: PendientesFiltradosPorHora) {
+    suspend fun showHourNotifications(pendientesFiltrados: PendientesFiltradosPorHora) {
         // Notify for future events (only if horasRestantes > 0)
         pendientesFiltrados.futuros
             .filter { it.horasRestantes > 0 } // Only show future notifications if hours > 0
@@ -91,7 +91,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     // Notification for day-based events
-    fun showDayNotifications(pendientesFiltrados: PendientesFiltradosPorFecha) {
+    suspend fun showDayNotifications(pendientesFiltrados: PendientesFiltradosPorFecha) {
         // Notify for future events (only if diasFaltantes > 0)
         pendientesFiltrados.futuros
             .filter { it.diasFaltantes != null && it.diasFaltantes > 0 } // Only show future notifications if days > 0
@@ -138,7 +138,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     // Past hour notification (with action button)
-    private fun showPastHourNotification(pendiente: PendienteCompletoConHora, notificationId: Int) {
+    private suspend fun showPastHourNotification(pendiente: PendienteCompletoConHora, notificationId: Int) {
         val title = "Pendiente vencido: ${pendiente.medicina?.nombre ?: "Medicina"}"
         val content = "Ganado: ${pendiente.ganado?.apodo ?: "Sin apodo"}\n" +
                 "Pasaron ${Math.abs(pendiente.horasRestantes)} horas"
@@ -177,7 +177,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     // Same day hour notification (with action button)
-    private fun showSameDayHourNotification(pendiente: PendienteCompletoConHora, notificationId: Int) {
+    private suspend fun showSameDayHourNotification(pendiente: PendienteCompletoConHora, notificationId: Int) {
         val title = "Pendiente para hoy: ${pendiente.medicina?.nombre ?: "Medicina"}"
         val content = "Ganado: ${pendiente.ganado?.apodo ?: "Sin apodo"}\n" +
                 "Programado para hoy (${formatTime(pendiente.pendiente.fechaProgramada)})"
@@ -243,7 +243,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     // Past day notification (with action button)
-    private fun showPastDayNotification(pendiente: PendienteCompleto, notificationId: Int) {
+    private suspend fun showPastDayNotification(pendiente: PendienteCompleto, notificationId: Int) {
         val title = "Pendiente vencido: ${pendiente.medicina?.nombre ?: "Medicina"}"
         val content = "Ganado: ${pendiente.ganado?.apodo ?: "Sin apodo"}\n" +
                 "Pasaron ${Math.abs(pendiente.diasFaltantes ?: 0)} días"
@@ -281,7 +281,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     // Same day notification (with action button)
-    private fun showSameDayNotification(pendiente: PendienteCompleto, notificationId: Int) {
+    private suspend fun showSameDayNotification(pendiente: PendienteCompleto, notificationId: Int) {
         val title = "Pendiente para hoy: ${pendiente.medicina?.nombre ?: "Medicina"}"
         val content = "Ganado: ${pendiente.ganado?.apodo ?: "Sin apodo"}\n" +
                 "Programado para hoy (${formatDate(pendiente.pendiente.fechaProgramada)})"

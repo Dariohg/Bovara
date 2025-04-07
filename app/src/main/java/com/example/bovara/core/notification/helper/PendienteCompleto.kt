@@ -18,11 +18,13 @@ data class PendienteCompleto(
     val ganado: GanadoEntity?,
     val diasFaltantes: Int? // Agregamos esta propiedad
 )
+
 data class PendientesFiltradosPorFecha(
-    val futuros: List<PendienteCompleto>,
-    val pasados: List<PendienteCompleto>,
-    val mismoDia: List<PendienteCompleto>
+    val futuros: MutableList<PendienteCompleto> = mutableListOf(),
+    val pasados: MutableList<PendienteCompleto> = mutableListOf(),
+    val mismoDia: MutableList<PendienteCompleto> = mutableListOf()
 )
+
 
 
 class PendienteCompletoUseCase(

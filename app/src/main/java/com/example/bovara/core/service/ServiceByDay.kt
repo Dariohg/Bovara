@@ -95,6 +95,9 @@ class ServiceByDay : Service() {
                 // Show notifications
                 CoroutineScope(Dispatchers.Main).launch {
                     notificationHelper.showDayNotifications(pendientesFiltrados)
+                    pendientesFiltrados.futuros.clear()
+                    pendientesFiltrados.pasados.clear()
+                    pendientesFiltrados.mismoDia.clear()
                 }
 
             } catch (e: Exception) {
