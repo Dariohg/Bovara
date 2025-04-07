@@ -199,7 +199,7 @@ class AddGanadoViewModel(
 
     private fun checkCanSave() {
         val state = _state.value
-        val hasChanges = state.ganado != null && (
+        val hasChanges = state.ganado == null || (
                 state.apodo != (state.ganado.apodo ?: "") ||
                         state.tipo != state.ganado.tipo ||
                         state.color != state.ganado.color ||
@@ -214,6 +214,8 @@ class AddGanadoViewModel(
                 state.numeroAreteError == null
 
         val canSave = hasChanges &&
+                state.sexo.isNotBlank() &&
+                state.sexoError == null &&
                 state.tipo.isNotBlank() &&
                 state.tipoError == null &&
                 state.color.isNotBlank() &&
