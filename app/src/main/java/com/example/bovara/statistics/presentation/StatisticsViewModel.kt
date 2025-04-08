@@ -1,23 +1,22 @@
 package com.example.bovara.statistics.presentation
 
+import android.content.Context
+import android.provider.Settings
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.bovara.ganado.data.model.GanadoEstadistica
 import com.example.bovara.ganado.domain.GanadoUseCase
-import com.example.bovara.statistics.data.model.DetallesHembras
-import com.example.bovara.statistics.data.model.DetallesMachos
-import com.example.bovara.statistics.data.model.EstadoAnimales
-import com.example.bovara.statistics.data.model.Respaldo
-import com.example.bovara.statistics.data.model.RespaldoRequest
+import com.example.bovara.statistics.data.model.*
 import com.example.bovara.statistics.data.repository.StatisticsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.Date
 
 class StatisticsViewModel(
+    private val context: Context,
     private val ganadoUseCase: GanadoUseCase,
     private val statisticsRepository: StatisticsRepository
 ) : ViewModel() {
@@ -36,32 +35,44 @@ class StatisticsViewModel(
         viewModelScope.launch {
             _uiState.value = StatisticsUiState.Loading
             try {
-                val respaldos = statisticsRepository.getAllBackups()
-                if (respaldos.isEmpty()) {
-                    _uiState.value = StatisticsUiState.Empty
+                val deviceId = obtenerIdDispositivo()
+                val respaldos = statisticsRepository.getBackupsByDeviceId(deviceId)
+                _uiState.value = if (respaldos.isEmpty()) {
+                    StatisticsUiState.Empty
                 } else {
-                    _uiState.value = StatisticsUiState.Success(respaldos)
+                    StatisticsUiState.Success(respaldos)
                 }
             } catch (e: Exception) {
                 _uiState.value = StatisticsUiState.Error("Error al cargar los respaldos: ${e.message}")
             }
         }
+
     }
+
 
     fun createBackup() {
         viewModelScope.launch {
             _isCreatingBackup.value = true
             try {
-                // Obtener estadísticas actuales del ganado
+                val deviceId = obtenerIdDispositivo()
                 val estadisticas = ganadoUseCase.obtenerEstadisticasGanado()
+                val request = mapGanadoEstadisticaToRespaldoRequest(estadisticas, deviceId)
 
-                // Crear un nuevo respaldo con las estadísticas
-                val request = mapGanadoEstadisticaToRespaldoRequest(estadisticas)
+                if (request.totalMachos == 0 &&
+                    request.totalHembras == 0 &&
+                    request.detalleMachos.becerro == 0 &&
+                    request.detalleMachos.torito == 0 &&
+                    request.detalleMachos.toro == 0 &&
+                    request.detalleHembras.becerra == 0 &&
+                    request.detalleHembras.vaca == 0 &&
+                    request.estadoAnimales.activos == 0 &&
+                    request.estadoAnimales.vendidos == 0 &&
+                    request.estadoAnimales.muertos == 0) {
+                    _uiState.value = StatisticsUiState.Error("No hay datos para crear el respaldo.")
+                    return@launch
+                }
 
-                // Guardar el respaldo
                 statisticsRepository.createBackup(request)
-
-                // Recargar la lista de respaldos
                 fetchBackups()
             } catch (e: Exception) {
                 _uiState.value = StatisticsUiState.Error("Error al crear respaldo: ${e.message}")
@@ -71,8 +82,17 @@ class StatisticsViewModel(
         }
     }
 
-    private fun mapGanadoEstadisticaToRespaldoRequest(estadisticas: GanadoEstadistica): RespaldoRequest {
+
+    private fun obtenerIdDispositivo(): String {
+        return Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID
+        ) ?: "ID_DESCONOCIDO"
+    }
+
+    private fun mapGanadoEstadisticaToRespaldoRequest(estadisticas: GanadoEstadistica, deviceId: String): RespaldoRequest {
         return RespaldoRequest(
+            idDispositivo = deviceId,
             totalMachos = estadisticas.totalMachos,
             totalHembras = estadisticas.totalHembras,
             detalleMachos = DetallesMachos(
@@ -93,13 +113,14 @@ class StatisticsViewModel(
     }
 
     class Factory(
+        private val context: Context,
         private val ganadoUseCase: GanadoUseCase,
         private val statisticsRepository: StatisticsRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(StatisticsViewModel::class.java)) {
-                return StatisticsViewModel(ganadoUseCase, statisticsRepository) as T
+                return StatisticsViewModel(context, ganadoUseCase, statisticsRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -112,4 +133,3 @@ sealed class StatisticsUiState {
     data class Error(val message: String) : StatisticsUiState()
     data class Success(val respaldos: List<Respaldo>) : StatisticsUiState()
 }
-

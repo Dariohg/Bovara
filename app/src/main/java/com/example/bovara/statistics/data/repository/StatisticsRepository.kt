@@ -6,12 +6,13 @@ import com.example.bovara.statistics.data.model.RespaldoRequest
 
 class StatisticsRepository(private val statisticsApi: StatisticsApi) {
 
-    suspend fun getAllBackups(): List<Respaldo> {
-        return statisticsApi.getBackups().respaldos
+    suspend fun getBackupsByDeviceId(deviceId: String): List<Respaldo> {
+        return statisticsApi.getBackupsByDeviceId(deviceId).respaldos
     }
 
     suspend fun createBackup(request: RespaldoRequest): Respaldo {
         return statisticsApi.createBackup(request)
     }
 }
+
 

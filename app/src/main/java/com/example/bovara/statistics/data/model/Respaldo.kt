@@ -70,6 +70,8 @@ data class EstadoAnimales(
 
 // Class for creating a new backup (POST request)
 data class RespaldoRequest(
+    @SerializedName("idDispositivo")
+    val idDispositivo : String,
     @SerializedName("totalMachos")
     val totalMachos: Int,
 

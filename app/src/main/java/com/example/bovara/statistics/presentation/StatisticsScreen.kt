@@ -29,7 +29,10 @@ fun StatisticsScreen(
     ganadoUseCase: GanadoUseCase,
     connectivityChecker: ConnectivityChecker = ConnectivityChecker(),
     viewModel: StatisticsViewModel = viewModel(
-        factory = StatisticsModule.provideStatisticsViewModelFactory(ganadoUseCase)
+        factory = StatisticsModule.provideStatisticsViewModelFactory(
+            context = LocalContext.current,
+            ganadoUseCase = ganadoUseCase
+        )
     )
 ) {
     var isConnected by remember { mutableStateOf(false) }

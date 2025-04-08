@@ -10,7 +10,8 @@ interface StatisticsUseCase {
     suspend fun getGanadoEstadisticasFlow(): Flow<GanadoEstadistica>
 
     // Métodos para gestionar respaldos
-    suspend fun getBackups(): List<Respaldo>
+    suspend fun getBackupsByDeviceId(deviceId: String): List<Respaldo>
     suspend fun createBackup(request: RespaldoRequest): Respaldo
 }
+
 

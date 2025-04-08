@@ -21,12 +21,13 @@ class StatisticsUseCaseImpl(
         emit(ganadoUseCase.obtenerEstadisticasGanado())
     }
 
-    override suspend fun getBackups(): List<Respaldo> {
-        return statisticsRepository.getAllBackups()
+    override suspend fun getBackupsByDeviceId(deviceId: String): List<Respaldo> {
+        return statisticsRepository.getBackupsByDeviceId(deviceId)
     }
 
     override suspend fun createBackup(request: RespaldoRequest): Respaldo {
         return statisticsRepository.createBackup(request)
     }
 }
+
 
