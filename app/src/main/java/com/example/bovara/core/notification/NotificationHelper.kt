@@ -151,15 +151,21 @@ class NotificationHelper(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
-        AccionHandler.accionPorHora(pendiente)
-
-        val actionIntent = Intent(context, MainActivity::class.java).apply {
-            action = "MARK_COMPLETED"
-            putExtra("PENDIENTE_ID", pendiente.pendiente.id)
+        // Cambiar la creación del actionIntent
+        val actionIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = NotificationActionReceiver.ACTION_COMPLETE_TASK
+            putExtra(NotificationActionReceiver.EXTRA_PENDIENTE_ID, pendiente.pendiente.id.toLong())
+            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
         }
-        val actionPendingIntent = PendingIntent.getActivity(
-            context, pendiente.pendiente.id.toInt(), actionIntent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+
+        val actionPendingIntent = PendingIntent.getBroadcast(
+            context,
+            pendiente.pendiente.id.toInt(),
+            actionIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            else
+                PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID_HOUR)
@@ -190,15 +196,21 @@ class NotificationHelper(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
-        AccionHandler.accionPorHora(pendiente)
-
-        val actionIntent = Intent(context, MainActivity::class.java).apply {
-            action = "MARK_COMPLETED"
-            putExtra("PENDIENTE_ID", pendiente.pendiente.id)
+        // Cambiar la creación del actionIntent
+        val actionIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = NotificationActionReceiver.ACTION_COMPLETE_TASK
+            putExtra(NotificationActionReceiver.EXTRA_PENDIENTE_ID, pendiente.pendiente.id.toLong())
+            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
         }
-        val actionPendingIntent = PendingIntent.getActivity(
-            context, pendiente.pendiente.id.toInt(), actionIntent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+
+        val actionPendingIntent = PendingIntent.getBroadcast(
+            context,
+            pendiente.pendiente.id.toInt(),
+            actionIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            else
+                PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID_HOUR)
@@ -256,14 +268,21 @@ class NotificationHelper(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
-        AccionHandler.accionPorFecha(pendiente)
-        val actionIntent = Intent(context, MainActivity::class.java).apply {
-            action = "MARK_COMPLETED"
-            putExtra("PENDIENTE_ID", pendiente.pendiente.id)
+        // Cambiar la creación del actionIntent
+        val actionIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = NotificationActionReceiver.ACTION_COMPLETE_TASK
+            putExtra(NotificationActionReceiver.EXTRA_PENDIENTE_ID, pendiente.pendiente.id.toLong())
+            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
         }
-        val actionPendingIntent = PendingIntent.getActivity(
-            context, pendiente.pendiente.id.toInt(), actionIntent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+
+        val actionPendingIntent = PendingIntent.getBroadcast(
+            context,
+            pendiente.pendiente.id.toInt(),
+            actionIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            else
+                PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID_DAY)
@@ -294,15 +313,21 @@ class NotificationHelper(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
         )
 
-        AccionHandler.accionPorFecha(pendiente)
-
-        val actionIntent = Intent(context, MainActivity::class.java).apply {
-            action = "MARK_COMPLETED"
-            putExtra("PENDIENTE_ID", pendiente.pendiente.id)
+        // Cambiar la creación del actionIntent
+        val actionIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = NotificationActionReceiver.ACTION_COMPLETE_TASK
+            putExtra(NotificationActionReceiver.EXTRA_PENDIENTE_ID, pendiente.pendiente.id.toLong())
+            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
         }
-        val actionPendingIntent = PendingIntent.getActivity(
-            context, pendiente.pendiente.id.toInt(), actionIntent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+
+        val actionPendingIntent = PendingIntent.getBroadcast(
+            context,
+            pendiente.pendiente.id.toInt(),
+            actionIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            else
+                PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID_DAY)

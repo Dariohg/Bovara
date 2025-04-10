@@ -74,7 +74,13 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
-        <!-- Add the BroadcastReceiver -->
+        <receiver
+            android:name=".core.notification.NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.bovara.ACTION_COMPLETE_TASK" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.bovara.medicamento.domain.MedicamentoUseCase
 import com.example.bovara.pendiente.domain.PendienteUseCase
 import java.util.Date
+import kotlinx.coroutines.flow.first
 
 object AccionHandler {
 
@@ -17,6 +18,12 @@ object AccionHandler {
 
     suspend fun accionPorHora(pendiente: PendienteCompletoConHora) {
         Log.d("AccionHandler", "Acción por hora: ${pendiente.pendiente.id}")
+        pendiente.medicina?.let { procesarPendiente(pendiente.pendiente, it) }
+    }
+
+    // Nuevo método para procesar directamente desde la notificación
+    suspend fun accionDirecta(pendiente: PendienteCompleto) {
+        Log.d("AccionHandler", "Acción directa: ${pendiente.pendiente.id}")
         pendiente.medicina?.let { procesarPendiente(pendiente.pendiente, it) }
     }
 
