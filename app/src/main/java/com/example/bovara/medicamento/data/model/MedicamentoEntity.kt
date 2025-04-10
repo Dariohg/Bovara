@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.example.bovara.ganado.data.model.GanadoEntity
+import java.io.Serializable
 import java.util.Date
 
 @Entity(
@@ -35,4 +36,4 @@ data class MedicamentoEntity(
     val recordatorio: Boolean = false, // Si debe generar una notificación
     val notas: String? = null, // Notas adicionales
     val fechaRegistro: Date = Date() // Fecha en que se registró esta entrada
-)
+): Serializable

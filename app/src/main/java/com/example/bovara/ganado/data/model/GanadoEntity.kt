@@ -3,6 +3,7 @@ package com.example.bovara.ganado.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.io.Serializable
 import java.util.Date
 
 @Entity(tableName = "ganado")
@@ -21,4 +22,4 @@ data class GanadoEntity(
     val imagenUrl: String? = null, // Ruta de la imagen principal
     val imagenesSecundarias: List<String>? = null, // Lista de rutas de imágenes secundarias
     val fechaRegistro: Date = Date() // Fecha en la que se registró el animal
-)
+): Serializable

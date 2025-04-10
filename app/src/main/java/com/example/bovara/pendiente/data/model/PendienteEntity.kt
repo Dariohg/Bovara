@@ -3,6 +3,7 @@ package com.example.bovara.pendiente.data.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ColumnInfo
+import java.io.Serializable
 import java.util.Date
 
 @Entity(tableName = "pendientes")
@@ -20,4 +21,5 @@ data class PendienteEntity(
 
     @ColumnInfo(name = "estatus")
     var estatus: String // Ejemplo: "pendiente", "completado"
-)
+
+): Serializable

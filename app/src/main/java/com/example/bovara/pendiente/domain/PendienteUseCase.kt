@@ -33,4 +33,8 @@ class PendienteUseCase(private val repository: PendienteRepository) {
 
     suspend fun eliminar(pendiente: PendienteEntity) =
         repository.eliminar(pendiente)
+
+    suspend fun obtenerPendientesDelDiaConHorasRelativas(): Flow<List<PendienteEntity>> =
+        repository.obtenerPendientesDelDiaConHorasRelativas()
+
 }

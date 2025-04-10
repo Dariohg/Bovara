@@ -74,9 +74,8 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
-
+        <!-- Add the BroadcastReceiver -->
 
     </application>
 
 </manifest>
-

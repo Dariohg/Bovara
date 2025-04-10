@@ -14,13 +14,15 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import android.util.Log
+import java.io.Serializable
+import kotlin.math.roundToLong
 
 data class PendienteCompletoConHora(
     val pendiente: PendienteEntity,
     val medicina: MedicamentoEntity?,
     val ganado: GanadoEntity?,
     val horasRestantes: Long
-)
+): Serializable
 
 data class PendientesFiltradosPorHora(
     val futuros: MutableList<PendienteCompletoConHora> = mutableListOf(),
@@ -34,8 +36,13 @@ class FiltroPendientesPorHoraUseCase(
     private val ganadoUseCase: GanadoUseCase
 ) {
 
-    fun obtenerPendientes(): Flow<List<PendienteCompletoConHora>> {
-        return pendienteUseCase.obtenerTodos().map { listaPendientes ->
+
+
+    suspend fun obtenerPendientes(): Flow<List<PendienteCompletoConHora>> {
+        return pendienteUseCase.obtenerPendientesDelDiaConHorasRelativas().map { listaPendientes ->
+            val ahora = Date() // Hora actual
+            val dateFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH)
+
             listaPendientes.map { pendiente ->
                 val medicamento = medicamentoUseCase
                     .getMedicamentoById(pendiente.idMedicina.toInt())
@@ -44,146 +51,50 @@ class FiltroPendientesPorHoraUseCase(
                 val ganado = medicamento?.ganadoId?.let { idGanado ->
                     ganadoUseCase.getGanadoById(idGanado).firstOrNull()
                 }
-                val fecha = convertirFechaProgramada(pendiente.fechaProgramada)
-                val hora = extraerHoraDesdeString(pendiente.hora) // viene como String
 
-                val horasRestantes = calcularHoras(
-                    fecha,
-                    Calendar.getInstance().time,
-                    hora
-                )
+                // Parsear la hora desde string a Date
+                val horaParseada: Date = dateFormat.parse(pendiente.hora)
+
+                // Calcular diferencia en horas
+                val diferenciaMs = horaParseada.time - ahora.time
+                val diferenciaHoras = diferenciaMs / (1000.0 * 60 * 60)
 
                 PendienteCompletoConHora(
                     pendiente = pendiente,
                     medicina = medicamento,
                     ganado = ganado,
-                    horasRestantes = horasRestantes
+                    horasRestantes = diferenciaHoras.roundToLong()
                 )
             }
         }
     }
 
-    suspend fun filtrarPendientesPorHora(fechaReferencia: Date): PendientesFiltradosPorHora {
-        val pendientes = obtenerPendientes().firstOrNull().orEmpty()
 
-        val mismosDia = mutableListOf<PendienteCompletoConHora>()
-        val pasados = mutableListOf<PendienteCompletoConHora>()
-        val futuros = mutableListOf<PendienteCompletoConHora>()
+    suspend fun filtrarPendientesPorHora(): PendientesFiltradosPorHora {
+        val pendientes = obtenerPendientes().firstOrNull().orEmpty()
+        val resultado = PendientesFiltradosPorHora()
 
         pendientes.forEach { pendienteCompleto ->
-            val fecha = convertirFechaProgramada(pendienteCompleto.pendiente.fechaProgramada)
-            val hora = extraerHoraDesdeString(pendienteCompleto.pendiente.hora)
+            val horas = pendienteCompleto.horasRestantes
 
-            val horasRestantes = calcularHoras(
-                fecha,
-                fechaReferencia,
-                hora
-            )
+            val estado = when {
+                horas == 0L -> EstadoPendiente.EN_HORA
+                horas > 0L -> EstadoPendiente.FUTURO
+                else -> EstadoPendiente.PASADO
+            }
 
-            if (horasRestantes != -1L) {
-                val estadoHora = determinarEstadoPorHora(pendienteCompleto, fechaReferencia)
-
-                when (estadoHora) {
-                    EstadoPendiente.EN_HORA -> mismosDia.add(pendienteCompleto)
-                    EstadoPendiente.PASADO -> pasados.add(pendienteCompleto)
-                    EstadoPendiente.FUTURO -> {
-                        if (pendienteCompleto.horasRestantes > 0) {
-                            futuros.add(pendienteCompleto)
-                        }
-                    }
-                }
+            when (estado) {
+                EstadoPendiente.EN_HORA -> resultado.mismoDia.add(pendienteCompleto)
+                EstadoPendiente.FUTURO -> resultado.futuros.add(pendienteCompleto)
+                EstadoPendiente.PASADO -> resultado.pasados.add(pendienteCompleto)
             }
         }
 
-        return PendientesFiltradosPorHora(
-            futuros = futuros,
-            pasados = pasados,
-            mismoDia = mismosDia
-        )
+        return resultado
     }
 
-    private fun extraerHoraDesdeString(horaStr: String): Int {
-        return try {
-            val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH)
-            val date = sdf.parse(horaStr)
-            val cal = Calendar.getInstance()
-            cal.time = date!!
-            cal.get(Calendar.HOUR_OF_DAY)
-        } catch (e: Exception) {
-            Log.e("FiltroPendientesPorHora", "No se pudo parsear hora: $horaStr", e)
-            -1
-        }
+
+    enum class EstadoPendiente {
+        EN_HORA, FUTURO, PASADO
     }
-
-    private fun calcularHoras(fechaPendiente: Date, fechaReferencia: Date, horaPendiente: Int): Long {
-        if (horaPendiente == -1) return -1L
-
-        val calRef = Calendar.getInstance().apply { time = fechaReferencia }
-        val horaActual = calRef.get(Calendar.HOUR_OF_DAY)
-
-        val diferenciaHoras = horaPendiente - horaActual
-
-        return when (Math.abs(diferenciaHoras)) {
-            0, 1, 3, 5 -> diferenciaHoras.toLong()
-            else -> -1L
-        }
-    }
-
-    private fun determinarEstadoPorHora(
-        pendiente: PendienteCompletoConHora,
-        fechaReferencia: Date
-    ): EstadoPendiente {
-        val fechaPendiente = convertirFechaProgramada(pendiente.pendiente.fechaProgramada)
-
-        val horaPendiente = extraerHoraDesdeString(pendiente.pendiente.hora)
-
-        if (horaPendiente == -1) return EstadoPendiente.PASADO
-
-        val esMismoDia = esMismoDia(fechaPendiente, Calendar.getInstance().apply { time = fechaReferencia })
-
-        val calRef = Calendar.getInstance().apply { time = fechaReferencia }
-        val horaActual = calRef.get(Calendar.HOUR_OF_DAY)
-        val minutoActual = calRef.get(Calendar.MINUTE)
-
-        val diferenciaHoras = Math.abs(horaPendiente - horaActual)
-        val esHoraValida = (diferenciaHoras == 0 || diferenciaHoras == 1 ||
-                diferenciaHoras == 3 || diferenciaHoras == 5) &&
-                minutoActual <= 1
-
-        return when {
-            esMismoDia && esHoraValida -> EstadoPendiente.EN_HORA
-            fechaPendiente.after(fechaReferencia) || (esMismoDia && horaPendiente > horaActual) -> EstadoPendiente.FUTURO
-            else -> EstadoPendiente.PASADO
-        }
-    }
-
-    private fun esMismoDia(fecha: Date, calendarioReferencia: Calendar): Boolean {
-        val calendarioFecha = Calendar.getInstance().apply { time = fecha }
-        return calendarioFecha.get(Calendar.YEAR) == calendarioReferencia.get(Calendar.YEAR) &&
-                calendarioFecha.get(Calendar.DAY_OF_YEAR) == calendarioReferencia.get(Calendar.DAY_OF_YEAR)
-    }
-
-    private fun convertirFechaProgramada(fechaProgramada: Any): Date {
-        return when (fechaProgramada) {
-            is Long -> Date(fechaProgramada)
-            is String -> {
-                try {
-                    val formato = SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH)
-                    formato.parse(fechaProgramada) ?: Date()
-                } catch (e: Exception) {
-                    Log.e("FiltroPendientesPorHora", "Error al parsear fecha: $fechaProgramada", e)
-                    Date()
-                }
-            }
-            else -> {
-                Log.e("FiltroPendientesPorHora", "Formato de fecha desconocido: $fechaProgramada")
-                Date()
-            }
-        }
-    }
-
-}
-
-enum class EstadoPendiente {
-    EN_HORA, FUTURO, PASADO
 }

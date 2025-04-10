@@ -33,4 +33,8 @@ interface PendienteDao {
 
     @Delete
     suspend fun eliminar(pendiente: PendienteEntity)
+
+    @Query("SELECT * FROM pendientes WHERE fecha_programada BETWEEN :inicio AND :fin")
+    suspend fun obtenerDelDiaActual(inicio: Date, fin: Date): List<PendienteEntity>
+
 }

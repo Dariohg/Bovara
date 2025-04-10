@@ -2,7 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("kotlin-kapt") // Necesitamos mantenerlo para Room, pero no para Hilt
+    id("kotlin-kapt") // Necesario para Room
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -39,6 +40,7 @@ android {
         compose = true
     }
 }
+
 configurations.all {
     exclude(group = "xmlpull", module = "xmlpull")
 }
@@ -88,4 +90,10 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    //Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
 }

@@ -81,10 +81,10 @@ class ServiceByHour : Service() {
     }
 
     private fun obtenerPendientes() {
-        val fechaReferencia = Date()
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val pendientesFiltrados: PendientesFiltradosPorHora = pendientesPorHoraUseCase.filtrarPendientesPorHora(fechaReferencia)
+                val pendientesFiltrados: PendientesFiltradosPorHora = pendientesPorHoraUseCase.filtrarPendientesPorHora()
 
                 // Log for debugging
                 Log.d("NotificationByHourService", "Pendientes futuros: ${pendientesFiltrados.futuros}")

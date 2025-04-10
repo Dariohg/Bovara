@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "279990576111",
+    "project_id": "bovara-1c68c",
+    "storage_bucket": "bovara-1c68c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:279990576111:android:9f741bfa2a99b3316b0c1a",
+        "android_client_info": {
+          "package_name": "com.example.bovara"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq_OKqshU0lKiQoS-H7iaYftIE1h3wBG0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

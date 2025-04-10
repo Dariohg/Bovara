@@ -9,6 +9,7 @@ import com.example.bovara.ganado.data.model.GanadoEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import java.io.Serializable
 import java.util.Calendar
 import java.util.Date
 
@@ -17,7 +18,7 @@ data class PendienteCompleto(
     val medicina: MedicamentoEntity?,
     val ganado: GanadoEntity?,
     val diasFaltantes: Int? // Agregamos esta propiedad
-)
+): Serializable
 
 data class PendientesFiltradosPorFecha(
     val futuros: MutableList<PendienteCompleto> = mutableListOf(),
