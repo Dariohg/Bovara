@@ -1,7 +1,5 @@
-// File: app/src/main/java/com/example/bovara/medicamento/presentation/VacunasGanadoScreen.kt
 package com.example.bovara.medicamento.presentation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -101,32 +98,8 @@ fun VacunasGanadoScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
-                // Sección de vacunas programadas pendientes
-                val vacunasPendientes = state.vacunas.filter {
-                    it.esProgramado && !it.aplicado
-                }
-
-                if (vacunasPendientes.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "Vacunas Programadas",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    items(vacunasPendientes) { vacuna ->
-                        VacunaItem(
-                            vacuna = vacuna,
-                            onMarcarAplicada = { viewModel.marcarVacunaComoAplicada(it) }
-                        )
-                    }
-
-                    item { Spacer(modifier = Modifier.height(16.dp)) }
-                }
-
-                // Sección de vacunas aplicadas
-                val vacunasAplicadas = state.vacunas.filter { it.aplicado }
+                // Mostramos todas las vacunas como aplicadas, ya que eliminamos la funcionalidad de programación
+                val vacunasAplicadas = state.vacunas
 
                 if (vacunasAplicadas.isNotEmpty()) {
                     item {
@@ -140,7 +113,7 @@ fun VacunasGanadoScreen(
                     items(vacunasAplicadas) { vacuna ->
                         VacunaItem(
                             vacuna = vacuna,
-                            onMarcarAplicada = null // Ya está aplicada
+                            onMarcarAplicada = null
                         )
                     }
                 }
@@ -194,8 +167,8 @@ fun VacunaItem(
                     )
                 }
 
-                // Badge o menú
-                Box {
+                // Menú de opciones
+                /*Box {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
@@ -207,22 +180,6 @@ fun VacunaItem(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
                     ) {
-                        if (onMarcarAplicada != null) {
-                            DropdownMenuItem(
-                                text = { Text("Marcar como aplicada") },
-                                onClick = {
-                                    onMarcarAplicada(vacuna.id)
-                                    showMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null
-                                    )
-                                }
-                            )
-                        }
-
                         DropdownMenuItem(
                             text = { Text("Ver detalles") },
                             onClick = { showMenu = false },
@@ -234,7 +191,7 @@ fun VacunaItem(
                             }
                         )
                     }
-                }
+                }*/
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -251,19 +208,16 @@ fun VacunaItem(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Fecha
+                // Fecha de aplicación
                 Column {
                     Text(
-                        text = if (vacuna.aplicado) "Aplicada el:" else "Programada para:",
+                        text = "Aplicada el:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Text(
-                        text = DateUtils.formatDate(
-                            if (vacuna.aplicado) vacuna.fechaAplicacion
-                            else vacuna.fechaProgramada ?: vacuna.fechaAplicacion
-                        ),
+                        text = DateUtils.formatDate(vacuna.fechaAplicacion),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -282,27 +236,6 @@ fun VacunaItem(
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
-                }
-            }
-
-            // Badge de estado
-            if (!vacuna.aplicado && vacuna.esProgramado) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFFFC107))
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "Pendiente",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
                 }
             }
         }

@@ -32,10 +32,9 @@ import com.example.bovara.core.utils.DateUtils
 import com.example.bovara.core.utils.ImageUtils
 import com.example.bovara.di.AppModule
 import com.example.bovara.ganado.data.model.GanadoEntity
+import com.example.bovara.ganado.presentation.components.AnimalNoteComponent
 import com.example.bovara.ganado.presentation.components.CriaItem
 import com.example.bovara.ui.theme.AccentGreen
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -452,8 +451,9 @@ fun GanadoDetailScreen(
 
                                     Spacer(modifier = Modifier.width(8.dp))
 
+                                    // Añadimos el contador de crías en el título
                                     Text(
-                                        text = "Crías",
+                                        text = "Crías (${state.crias.size})",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -500,7 +500,7 @@ fun GanadoDetailScreen(
                                     )
                                 }
                             } else {
-                                // Lista de crías
+                                // Lista de crías ordenadas por fecha de nacimiento (las más recientes primero)
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -521,7 +521,7 @@ fun GanadoDetailScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // Historial de vacunas (placeholder, implementar cuando se tenga la funcionalidad)
+                // Historial de vacunas
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -660,6 +660,17 @@ fun GanadoDetailScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Componente de Notas del Animal
+                if (state.ganado != null) {
+                    AnimalNoteComponent(
+                        note = state.ganado!!.nota,
+                        onNoteChange = { newNote -> viewModel.updateNote(newNote) },
+                        isEditable = state.ganado!!.estado == "activo"
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }

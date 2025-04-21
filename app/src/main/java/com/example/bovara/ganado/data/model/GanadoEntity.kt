@@ -21,5 +21,6 @@ data class GanadoEntity(
     val estado: String = "activo", // "activo", "vendido", "muerto"
     val imagenUrl: String? = null, // Ruta de la imagen principal
     val imagenesSecundarias: List<String>? = null, // Lista de rutas de imágenes secundarias
-    val fechaRegistro: Date = Date() // Fecha en la que se registró el animal
+    val fechaRegistro: Date = Date(),
+    val nota: String = ""
 ): Serializable

@@ -13,13 +13,6 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
-    <!-- Notification permissions -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- Add this for exact alarms -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.INTERNET"/>
 
 
@@ -61,26 +54,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Service -->
-        <service
-            android:name=".core.service.ServiceByHour"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <service
-            android:name=".core.service.ServiceByDay"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <receiver
-            android:name=".core.notification.NotificationActionReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.example.bovara.ACTION_COMPLETE_TASK" />
-            </intent-filter>
-        </receiver>
 
     </application>
 

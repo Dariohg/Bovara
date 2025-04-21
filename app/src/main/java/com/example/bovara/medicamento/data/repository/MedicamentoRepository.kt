@@ -12,8 +12,6 @@ class MedicamentoRepository(private val medicamentoDao: MedicamentoDao) {
     fun getMedicamentoById(id: Int): Flow<MedicamentoEntity?> =
         medicamentoDao.getMedicamentoById(id)
 
-    fun getMedicamentosProgramadosPendientes(): Flow<List<MedicamentoEntity>> =
-        medicamentoDao.getMedicamentosProgramadosPendientes()
 
     fun getMedicamentosAplicados(): Flow<List<MedicamentoEntity>> =
         medicamentoDao.getMedicamentosAplicados()

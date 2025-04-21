@@ -29,11 +29,8 @@ data class MedicamentoEntity(
     val dosisML: Float,
     val ganadoId: Int? = null,  // Cambiado a nullable
     val tipo: String = "vacuna", // "vacuna", "desparasitante", "vitamina", "antibiótico", "otro"
-    val esProgramado: Boolean = false, // Indica si es una vacuna programada regular
     val lote: String? = null, // Para identificar lotes de vacunas
     val aplicado: Boolean = false, // Indica si ya fue aplicado
-    val fechaProgramada: Date? = null, // Fecha para la que está programada la aplicación
-    val recordatorio: Boolean = false, // Si debe generar una notificación
     val notas: String? = null, // Notas adicionales
     val fechaRegistro: Date = Date() // Fecha en que se registró esta entrada
 ): Serializable

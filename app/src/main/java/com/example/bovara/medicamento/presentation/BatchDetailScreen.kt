@@ -1,4 +1,3 @@
-// File: app/src/main/java/com/example/bovara/medicamento/presentation/BatchDetailScreen.kt
 package com.example.bovara.medicamento.presentation
 
 import androidx.compose.foundation.Image

@@ -148,6 +148,12 @@ class GanadoUseCase(
         return repository.insertGanado(ganado)
     }
 
+    suspend fun updateGanadoNote(ganadoId: Int, note: String) {
+        val ganado = getGanadoById(ganadoId).first() ?: throw IllegalArgumentException("Animal no encontrado")
+        val updated = ganado.copy(nota = note)
+        repository.updateGanado(updated)
+    }
+
     suspend fun updateGanado(ganado: GanadoEntity) = repository.updateGanado(ganado)
 
     suspend fun incrementarCriasDeMadre(madreId: Int) = repository.incrementarCriasDeMadre(madreId)

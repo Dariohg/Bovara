@@ -121,7 +121,6 @@ class RegisterMedicamentoViewModel(
                     dosisML = dosis,
                     ganadoId = 0, // Esto asegura que se guarde como un medicamento genérico
                     tipo = state.tipo,
-                    esProgramado = false,
                     notas = state.notas.takeIf { it.isNotBlank() }
                 )
 

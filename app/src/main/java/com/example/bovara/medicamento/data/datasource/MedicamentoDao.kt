@@ -13,9 +13,6 @@ interface MedicamentoDao {
     @Query("SELECT * FROM medicamentos WHERE id = :id")
     fun getMedicamentoById(id: Int): Flow<MedicamentoEntity?>
 
-    @Query("SELECT * FROM medicamentos WHERE esProgramado = 1 AND aplicado = 0 ORDER BY fechaProgramada ASC")
-    fun getMedicamentosProgramadosPendientes(): Flow<List<MedicamentoEntity>>
-
     @Query("SELECT * FROM medicamentos WHERE aplicado = 1 ORDER BY fechaAplicacion DESC")
     fun getMedicamentosAplicados(): Flow<List<MedicamentoEntity>>
 

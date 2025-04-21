@@ -27,7 +27,7 @@ import java.util.concurrent.Executors
         CrianzaEntity::class,
         PendienteEntity::class
     ],
-    version = 4, // Incrementamos la versión de la BD
+    version = 6, // Incrementamos la versión de la BD
     exportSchema = false
 )
 @TypeConverters(Converters::class)

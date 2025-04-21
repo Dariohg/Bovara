@@ -81,13 +81,6 @@ fun HomeScreen(
                             fontSize = 26.sp
                         )
                     )
-                },actions = {
-                    IconButton(onClick = onNavigateToStatistics) {
-                        Icon(
-                            imageVector = Icons.Filled.BarChart,
-                            contentDescription = "Estadísticas"
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background

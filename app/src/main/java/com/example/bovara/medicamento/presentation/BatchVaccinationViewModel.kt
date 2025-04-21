@@ -115,7 +115,6 @@ class BatchVaccinationViewModel(
                             dosisML = 5.0f, // Valor por defecto
                             ganadoId = 0, // ID genérico para medicamentos de vacunación por lotes
                             tipo = "vacuna",
-                            esProgramado = false, // Cambiar a false ya que se aplicará de inmediato
                             aplicado = false // Inicialmente no aplicado
                         )
 
@@ -217,10 +216,6 @@ class BatchVaccinationViewModel(
                     fechaAplicacion = _state.value.fechaAplicacion,
                     dosisML = _state.value.dosisML,
                     tipo = "vacuna",
-                    // Si está pausado, lo marcamos como programados para continuarlo después
-                    esProgramado = isPaused,
-                    // Pasar el valor de aplicado como parámetro
-                    aplicado = !isPaused
                 )
 
                 // Si está finalizado (no pausado), reseteamos el estado

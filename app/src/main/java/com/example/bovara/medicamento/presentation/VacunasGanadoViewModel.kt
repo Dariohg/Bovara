@@ -52,18 +52,6 @@ class VacunasGanadoViewModel(
             }
         }
     }
-
-    fun marcarVacunaComoAplicada(medicamentoId: Int) {
-        viewModelScope.launch {
-            try {
-                medicamentoUseCase.marcarComoAplicado(medicamentoId)
-                // El flujo se actualizará automáticamente a través de Room
-            } catch (e: Exception) {
-                _state.update { it.copy(error = e.message) }
-            }
-        }
-    }
-
     // Factory para crear el ViewModel
     class Factory(
         private val ganadoId: Int,

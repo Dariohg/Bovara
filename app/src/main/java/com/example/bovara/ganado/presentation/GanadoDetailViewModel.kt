@@ -43,6 +43,26 @@ class GanadoDetailViewModel(
         }
     }
 
+    fun updateNote(newNote: String) {
+        viewModelScope.launch {
+            try {
+                ganadoUseCase.updateGanadoNote(ganadoId, newNote)
+
+                // Actualizar el estado local con la nueva nota
+                _state.update { currentState ->
+                    currentState.ganado?.let { ganado ->
+                        val updatedGanado = ganado.copy(nota = newNote)
+                        currentState.copy(ganado = updatedGanado)
+                    } ?: currentState
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Error al guardar la nota: ${e.message}")
+                }
+            }
+        }
+    }
+
     private fun loadGanado() {
         _state.update { it.copy(isLoading = true) }
 
@@ -96,8 +116,11 @@ class GanadoDetailViewModel(
         viewModelScope.launch {
             try {
                 ganadoUseCase.getCriasByMadreId(madreId).collectLatest { crias ->
+                    // Ordenamos las crías de más reciente a más antigua por fecha de nacimiento
+                    val criasOrdenadas = crias.sortedByDescending { it.fechaNacimiento }
+
                     _state.update {
-                        it.copy(crias = crias)
+                        it.copy(crias = criasOrdenadas)
                     }
 
                     // Si es una becerra y tiene alguna cría, convertirla a vaca
