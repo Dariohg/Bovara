@@ -61,14 +61,21 @@ fun GanadoListScreen(
         }
     }
 
+    // Determinar el título según el parámetro de búsqueda
+    val screenTitle = when (initialSearchQuery) {
+        "toro_torito" -> "Toros y Toritos"
+        "vaca" -> "Vacas"
+        "becerra" -> "Becerras"
+        "becerro" -> "Becerros"
+        "" -> if (mode == GanadoListMode.BY_CATEGORY) "Ganado por Categoría" else "Ganado Reciente"
+        else -> "Resultados de búsqueda"
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        if (mode == GanadoListMode.BY_CATEGORY) "Ganado por Categoría"
-                        else "Ganado Reciente"
-                    )
+                    Text(screenTitle)
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -161,10 +168,35 @@ fun GanadoListScreen(
                 }
             } else {
                 when (mode) {
-                    GanadoListMode.BY_CATEGORY -> GanadoByCategoryList(
-                        ganado = state.filteredGanado,
-                        onGanadoClick = onGanadoClick
-                    )
+                    GanadoListMode.BY_CATEGORY -> {
+                        // Para filtros específicos, mostramos solo esa categoría
+                        when (initialSearchQuery) {
+                            "toro_torito" -> GanadoByTypeList(
+                                title = "Toros y Toritos",
+                                ganado = state.filteredGanado.filter { it.tipo == "toro" || it.tipo == "torito" },
+                                onGanadoClick = onGanadoClick
+                            )
+                            "vaca" -> GanadoByTypeList(
+                                title = "Vacas",
+                                ganado = state.filteredGanado.filter { it.tipo == "vaca" },
+                                onGanadoClick = onGanadoClick
+                            )
+                            "becerra" -> GanadoByTypeList(
+                                title = "Becerras",
+                                ganado = state.filteredGanado.filter { it.tipo == "becerra" },
+                                onGanadoClick = onGanadoClick
+                            )
+                            "becerro" -> GanadoByTypeList(
+                                title = "Becerros",
+                                ganado = state.filteredGanado.filter { it.tipo == "becerro" },
+                                onGanadoClick = onGanadoClick
+                            )
+                            else -> GanadoByCategoryList(
+                                ganado = state.filteredGanado,
+                                onGanadoClick = onGanadoClick
+                            )
+                        }
+                    }
                     GanadoListMode.BY_DATE -> GanadoByDateList(
                         ganado = state.filteredGanado,
                         onGanadoClick = onGanadoClick
@@ -205,6 +237,19 @@ fun GanadoByCategoryList(
             item { Spacer(modifier = Modifier.height(8.dp)) }
         }
 
+        // Sección de toritos
+        if (toritos.isNotEmpty()) {
+            item {
+                CategoryHeader(title = "Toritos", count = toritos.size)
+            }
+
+            items(toritos.sortedByDescending { it.numeroArete }) { animal ->
+                GanadoItemCard(ganado = animal, onClick = { onGanadoClick(animal.id) })
+            }
+
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+        }
+
         // Sección de vacas
         if (vacas.isNotEmpty()) {
             item {
@@ -212,20 +257,6 @@ fun GanadoByCategoryList(
             }
 
             items(vacas.sortedByDescending { it.numeroArete }) { animal ->
-                GanadoItemCard(ganado = animal, onClick = { onGanadoClick(animal.id) })
-            }
-
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-        }
-
-        // Sección de toritos y becerros
-        val toritosYBecerros = (toritos + becerros)
-        if (toritosYBecerros.isNotEmpty()) {
-            item {
-                CategoryHeader(title = "Toritos y Becerros", count = toritosYBecerros.size)
-            }
-
-            items(toritosYBecerros.sortedByDescending { it.numeroArete }) { animal ->
                 GanadoItemCard(ganado = animal, onClick = { onGanadoClick(animal.id) })
             }
 
@@ -241,6 +272,43 @@ fun GanadoByCategoryList(
             items(becerras.sortedByDescending { it.numeroArete }) { animal ->
                 GanadoItemCard(ganado = animal, onClick = { onGanadoClick(animal.id) })
             }
+
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+        }
+
+        // Sección de becerros
+        if (becerros.isNotEmpty()) {
+            item {
+                CategoryHeader(title = "Becerros", count = becerros.size)
+            }
+
+            items(becerros.sortedByDescending { it.numeroArete }) { animal ->
+                GanadoItemCard(ganado = animal, onClick = { onGanadoClick(animal.id) })
+            }
+        }
+
+        // Espacio final para el FAB
+        item { Spacer(modifier = Modifier.height(72.dp)) }
+    }
+}
+
+@Composable
+fun GanadoByTypeList(
+    title: String,
+    ganado: List<GanadoEntity>,
+    onGanadoClick: (Int) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            CategoryHeader(title = title, count = ganado.size)
+        }
+
+        items(ganado.sortedByDescending { it.numeroArete }) { animal ->
+            GanadoItemCard(ganado = animal, onClick = { onGanadoClick(animal.id) })
         }
 
         // Espacio final para el FAB

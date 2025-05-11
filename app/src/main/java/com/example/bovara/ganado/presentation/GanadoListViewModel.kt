@@ -50,10 +50,23 @@ class GanadoListViewModel(
 
     private fun filterGanado() {
         val query = _state.value.searchQuery
-        val filtered = if (query.isBlank()) {
-            allGanado
-        } else {
-            allGanado.filter { it.numeroArete.contains(query, ignoreCase = true) }
+        val filtered = when {
+            query.isBlank() -> {
+                // Si no hay consulta, mostrar todos
+                allGanado
+            }
+            query == "toro_torito" -> {
+                // Caso especial para filtrar toros y toritos
+                allGanado.filter { it.tipo == "toro" || it.tipo == "torito" }
+            }
+            query == "vaca" || query == "becerra" || query == "becerro" -> {
+                // Filtro por tipo exacto
+                allGanado.filter { it.tipo == query }
+            }
+            else -> {
+                // Filtro por número de arete (comportamiento original)
+                allGanado.filter { it.numeroArete.contains(query, ignoreCase = true) }
+            }
         }
 
         _state.update { it.copy(filteredGanado = filtered) }

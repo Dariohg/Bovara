@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
@@ -63,8 +64,22 @@ class HomeViewModel(
         _searchQuery.value = query
     }
 
-    fun filterByType(type: String?) {
+    fun filterByType(type: String) {
         _selectedType.value = type
+
+        // Actualizar los resultados filtrados
+        viewModelScope.launch {
+            ganado.value.let { allGanado ->
+                _filteredGanado.value = when (type) {
+                    "toro_torito" -> allGanado.filter { it.tipo == "toro" || it.tipo == "torito" }
+                    "vaca" -> allGanado.filter { it.tipo == "vaca" }
+                    "becerra" -> allGanado.filter { it.tipo == "becerra" }
+                    "becerro" -> allGanado.filter { it.tipo == "becerro" }
+                    else -> allGanado.filter { it.tipo == type }
+                }
+                _isSearchActive.value = true
+            }
+        }
     }
 
     fun refreshData() {

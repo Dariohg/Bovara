@@ -118,16 +118,17 @@ class EditGanadoViewModel(
 
         val error = when {
             numeroArete.isBlank() -> "Número de arete requerido"
+            numeroArete.length != 10 -> "El número de arete debe tener 10 dígitos"
             !numeroArete.matches(Regex("^07\\d{8}$")) -> "Formato incorrecto. Debe ser 07 seguido de 8 dígitos"
             else -> null
         }
         _state.update { it.copy(numeroAreteError = error) }
 
-        // Si cambió el arete, verificar que no exista
         if (numeroArete != originalNumeroArete) {
             checkAreteExists()
         }
     }
+
     private fun checkAreteExists() {
         val numeroArete = _state.value.numeroArete
         val originalNumeroArete = _state.value.ganado?.numeroArete
@@ -198,17 +199,24 @@ class EditGanadoViewModel(
                         state.tipo != state.ganado.tipo ||
                         state.color != state.ganado.color ||
                         state.fechaNacimiento != state.ganado.fechaNacimiento ||
-                        state.estado != state.ganado.estado
+                        state.estado != state.ganado.estado ||
+                        state.numeroArete != state.ganado.numeroArete // Considerar cambios en el número de arete
                 )
+
+        val areteValido = state.numeroArete.length == 10 &&
+                state.numeroArete.matches(Regex("^07\\d{8}$")) &&
+                state.numeroAreteError == null
 
         val canSave = hasChanges &&
                 state.tipo.isNotBlank() &&
                 state.tipoError == null &&
                 state.color.isNotBlank() &&
-                state.colorError == null
+                state.colorError == null &&
+                areteValido // Usar la nueva condición que verifica tanto el formato como la longitud
 
         _state.update { it.copy(canSave = canSave) }
     }
+
 
     private fun saveGanado() {
         val state = _state.value

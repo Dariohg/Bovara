@@ -216,31 +216,45 @@ fun HomeScreen(
                     ) {
                         item {
                             CategoryCard(
-                                title = "Vacas",
-                                count = ganado.count { it.tipo == "vaca" },
-                                iconRes = R.drawable.ic_cow,
+                                title = "Toritos",
+                                count = ganado.count { it.tipo == "toro" || it.tipo == "torito" },
+                                systemIcon = Icons.Default.Male,
                                 onClick = {
-                                    viewModel.filterByType("vaca")
+                                    viewModel.filterByType("toro_torito")
+                                    onNavigateToSearchResults("toro_torito")
                                 }
                             )
                         }
                         item {
                             CategoryCard(
-                                title = "Toros",
-                                count = ganado.count { it.tipo == "toro" },
-                                iconRes = R.drawable.ic_bull,
+                                title = "Vacas",
+                                count = ganado.count { it.tipo == "vaca" },
+                                systemIcon = Icons.Default.Female, // Icono para hembras adultas
                                 onClick = {
-                                    viewModel.filterByType("toro")
+                                    viewModel.filterByType("vaca")
+                                    onNavigateToSearchResults("vaca")
+                                }
+                            )
+                        }
+                        item {
+                            CategoryCard(
+                                title = "Becerras",
+                                count = ganado.count { it.tipo == "becerra" },
+                                systemIcon = Icons.Default.Pets, // Icono para crías femeninas
+                                onClick = {
+                                    viewModel.filterByType("becerra")
+                                    onNavigateToSearchResults("becerra")
                                 }
                             )
                         }
                         item {
                             CategoryCard(
                                 title = "Becerros",
-                                count = ganado.count { it.tipo.contains("becer", ignoreCase = true) },
-                                iconRes = R.drawable.ic_cow,
+                                count = ganado.count { it.tipo == "becerro" },
+                                systemIcon = Icons.Default.Pets, // Icono para crías masculinas
                                 onClick = {
                                     viewModel.filterByType("becerro")
+                                    onNavigateToSearchResults("becerro")
                                 }
                             )
                         }
@@ -453,13 +467,14 @@ fun SectionHeader(
 fun CategoryCard(
     title: String,
     count: Int,
-    iconRes: Int,
+    systemIcon: ImageVector,
     onClick: () -> Unit
 ) {
+    // Aumentamos un poco la altura para acomodar títulos más largos
     Card(
         modifier = Modifier
             .width(117.dp)
-            .height(120.dp)
+            .height(130.dp) // Aumentamos la altura de 120dp a 130dp
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -470,36 +485,38 @@ fun CategoryCard(
                 .fillMaxSize()
                 .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.SpaceEvenly // Usamos SpaceEvenly en lugar de Center
         ) {
-            // En lugar de usar el icono problemático, usamos un icono del sistema
             Icon(
-                imageVector = when (title) {
-                    "Vacas" -> Icons.Rounded.Female
-                    "Toros" -> Icons.Rounded.Male
-                    else -> Icons.Rounded.Pets // Para Becerros
-                },
+                imageVector = systemIcon,
                 contentDescription = title,
-                tint = Color(0xFF4CAF50), // Verde más vivo
-                modifier = Modifier.size(40.dp)
+                tint = Color(0xFF4CAF50),
+                modifier = Modifier.size(36.dp) // Reducimos ligeramente el tamaño del ícono
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
+            // Texto con tamaño potencialmente ajustable para textos largos
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                // Si el título es largo, ajustamos el tamaño de la fuente
+                fontSize = if (title.length > 10) 14.sp else 16.sp,
+                // Aseguramos que quepa en máximo 2 líneas
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
 
+            // Hacemos el contador más visible
             Text(
                 text = count.toString(),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF4CAF50) // Verde más vivo
-                )
+                    color = Color(0xFF4CAF50)
+                ),
+                // Aseguramos que el contador se vea claramente
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
