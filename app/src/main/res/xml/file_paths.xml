@@ -27,4 +27,14 @@
     <cache-path
         name="temp"
         path="db_restore_temp" />
+
+    <!-- Ruta para acceder a la carpeta de descargas pública -->
+    <external-path
+        name="download"
+        path="Download/Bovara" />
+
+    <!-- Ruta alternativa para versiones más antiguas -->
+    <root-path
+        name="external_storage_root"
+        path="." />
 </paths>

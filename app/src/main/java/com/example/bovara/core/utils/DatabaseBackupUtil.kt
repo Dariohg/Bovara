@@ -1,11 +1,15 @@
 package com.example.bovara.core.utils
 
+import android.content.ContentValues
 import android.content.Context
+import android.media.MediaScannerConnection
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.room.Room
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.bovara.core.database.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,7 +29,7 @@ object DatabaseBackupUtil {
     private const val DB_NAME = "bovara_database"
 
     /**
-     * Realiza un respaldo de la base de datos a un archivo zip
+     * Realiza un respaldo de la base de datos a un archivo zip en la carpeta pública de Descargas
      *
      * @param context Contexto de la aplicación
      * @return Uri del archivo de respaldo o null si ocurrió un error
@@ -40,64 +44,104 @@ object DatabaseBackupUtil {
                 return@withContext null
             }
 
-            // Crea el directorio de respaldos si no existe
-            val backupDir = File(context.getExternalFilesDir(null), "backups")
-            if (!backupDir.exists()) {
-                backupDir.mkdirs()
-            }
-
-            // Crea el nombre del archivo de respaldo con la fecha y hora actual
-            val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-            val backupFileName = "bovara_backup_${dateFormat.format(Date())}.zip"
-            val backupFile = File(backupDir, backupFileName)
-
             // Cierra la base de datos para asegurarse de que todos los cambios están guardados
             Room.databaseBuilder(context, AppDatabase::class.java, DB_NAME)
                 .build()
                 .close()
 
-            // Crea el archivo zip
-            ZipOutputStream(BufferedOutputStream(FileOutputStream(backupFile))).use { zos ->
-                // Agrega el archivo de la base de datos al zip
-                val dbData = ByteArray(BUFFER_SIZE)
-                FileInputStream(dbFile).use { fis ->
-                    BufferedInputStream(fis).use { bis ->
-                        val entry = ZipEntry(dbFile.name)
-                        zos.putNextEntry(entry)
-                        var count: Int
-                        while (bis.read(dbData, 0, BUFFER_SIZE).also { count = it } != -1) {
-                            zos.write(dbData, 0, count)
+            val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+            val backupFileName = "bovara_backup_${dateFormat.format(Date())}.zip"
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Para Android 10 y superior usamos MediaStore
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, backupFileName)
+                    put(MediaStore.Downloads.MIME_TYPE, "application/zip")
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Bovara")
+                }
+
+                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+
+                if (uri != null) {
+                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        ZipOutputStream(BufferedOutputStream(outputStream)).use { zos ->
+                            // Agrega el archivo de la base de datos al zip
+                            addFileToZip(dbFile, zos)
+
+                            // También respaldamos los archivos -shm y -wal si existen
+                            val shmFile = File(dbFile.path + "-shm")
+                            if (shmFile.exists()) {
+                                addFileToZip(shmFile, zos)
+                            }
+
+                            val walFile = File(dbFile.path + "-wal")
+                            if (walFile.exists()) {
+                                addFileToZip(walFile, zos)
+                            }
+
+                            // Incluir imágenes
+                            val imagesDir = File(context.filesDir, "images")
+                            if (imagesDir.exists() && imagesDir.isDirectory) {
+                                addDirectoryToZip(imagesDir, "images", zos)
+                            }
                         }
-                        zos.closeEntry()
+                    }
+
+                    Log.d(TAG, "Respaldo creado exitosamente en Descargas/Bovara")
+                    return@withContext uri
+                } else {
+                    Log.e(TAG, "No se pudo crear el archivo de respaldo")
+                    return@withContext null
+                }
+            } else {
+                // Para Android 9 y versiones anteriores usamos el método tradicional
+                val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Bovara")
+                if (!backupDir.exists()) {
+                    backupDir.mkdirs()
+                }
+
+                val backupFile = File(backupDir, backupFileName)
+
+                // Crea el archivo zip
+                ZipOutputStream(BufferedOutputStream(FileOutputStream(backupFile))).use { zos ->
+                    // Agrega el archivo de la base de datos al zip
+                    addFileToZip(dbFile, zos)
+
+                    // También respaldamos los archivos -shm y -wal si existen
+                    val shmFile = File(dbFile.path + "-shm")
+                    if (shmFile.exists()) {
+                        addFileToZip(shmFile, zos)
+                    }
+
+                    val walFile = File(dbFile.path + "-wal")
+                    if (walFile.exists()) {
+                        addFileToZip(walFile, zos)
+                    }
+
+                    // Incluir imágenes
+                    val imagesDir = File(context.filesDir, "images")
+                    if (imagesDir.exists() && imagesDir.isDirectory) {
+                        addDirectoryToZip(imagesDir, "images", zos)
                     }
                 }
 
-                // También respaldamos los archivos -shm y -wal si existen
-                val shmFile = File(dbFile.path + "-shm")
-                if (shmFile.exists()) {
-                    addFileToZip(shmFile, zos)
-                }
+                Log.d(TAG, "Respaldo creado exitosamente en ${backupFile.absolutePath}")
 
-                val walFile = File(dbFile.path + "-wal")
-                if (walFile.exists()) {
-                    addFileToZip(walFile, zos)
-                }
+                // Notificar al sistema que se ha creado un nuevo archivo
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(backupFile.absolutePath),
+                    arrayOf("application/zip"),
+                    null
+                )
 
-                // Opcionalmente, también podríamos incluir las imágenes u otros archivos importantes
-                val imagesDir = File(context.filesDir, "images")
-                if (imagesDir.exists() && imagesDir.isDirectory) {
-                    addDirectoryToZip(imagesDir, "images", zos)
-                }
+                // Devuelve la URI del archivo de respaldo
+                return@withContext FileProvider.getUriForFile(
+                    context,
+                    "com.example.bovara.fileprovider",
+                    backupFile
+                )
             }
-
-            Log.d(TAG, "Respaldo creado exitosamente en ${backupFile.absolutePath}")
-
-            // Devuelve la URI del archivo de respaldo
-            return@withContext FileProvider.getUriForFile(
-                context,
-                "com.example.bovara.fileprovider",
-                backupFile
-            )
         } catch (e: Exception) {
             Log.e(TAG, "Error al crear respaldo: ${e.message}")
             e.printStackTrace()

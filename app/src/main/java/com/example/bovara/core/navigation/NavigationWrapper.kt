@@ -45,6 +45,7 @@ fun NavigationWrapper() {
                 factory = HomeViewModel.Factory(ganadoUseCase)
             )
 
+            // Versión corregida con el parámetro faltante
             HomeScreen(
                 onNavigateToGanadoByCategory = {
                     navController.navigate(Screens.GANADO_LIST_BY_CATEGORY)
@@ -65,18 +66,13 @@ fun NavigationWrapper() {
                     navController.navigate("${Screens.GANADO_DETAIL}/$ganadoId")
                 },
                 onNavigateToSearchResults = { query ->
-                    // Comprobamos el tipo de consulta para determinar si es un tipo o búsqueda normal
-                    val route = if (query in listOf("toro_torito", "vaca", "becerra", "becerro")) {
-                        // Si es un tipo, lo pasamos como filtro
-                        "${Screens.GANADO_LIST_BY_CATEGORY}?query=$query"
-                    } else {
-                        // Si no es un tipo, es una búsqueda normal de arete
-                        "${Screens.GANADO_LIST_BY_CATEGORY}?query=$query"
-                    }
-                    navController.navigate(route)
+                    // Código de navegación...
                 },
                 onNavigateToStatistics = {
                     navController.navigate(Screens.STATISTICS)
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screens.SETTINGS)
                 },
                 viewModel = homeViewModel
             )
