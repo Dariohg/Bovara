@@ -154,16 +154,34 @@ class GanadoUseCase(
         repository.updateGanado(updated)
     }
 
+    suspend fun actualizarEstado(ganadoId: Int, nuevoEstado: String) {
+        // Primero obtener el ganado actual para preservar los datos
+        val ganadoActual = repository.getGanadoById(ganadoId).first()
+
+        ganadoActual?.let { ganado ->
+            // Actualizar solo el estado, preservando todos los demás datos
+            val ganadoActualizado = ganado.copy(estado = nuevoEstado)
+            repository.updateGanado(ganadoActualizado)
+        }
+    }
+
+    // ELIMINA ESTE MÉTODO DUPLICADO - NO LO INCLUYAS
+    /*
+    suspend fun updateGanadoNote(ganadoId: Int, note: String) {
+        val ganado = getGanadoById(ganadoId).first()
+            ?: throw IllegalArgumentException("Animal no encontrado")
+        val updated = ganado.copy(nota = note)
+        repository.updateGanado(updated)
+    }
+    */
+
     suspend fun updateGanado(ganado: GanadoEntity) = repository.updateGanado(ganado)
 
     suspend fun incrementarCriasDeMadre(madreId: Int) = repository.incrementarCriasDeMadre(madreId)
-
-    suspend fun actualizarEstado(ganadoId: Int, nuevoEstado: String) = repository.actualizarEstado(ganadoId, nuevoEstado)
 
     suspend fun deleteGanado(ganado: GanadoEntity) = repository.deleteGanado(ganado)
 
     suspend fun obtenerEstadisticasGanado(): GanadoEstadistica {
         return repository.obtenerEstadisticas()
     }
-
 }

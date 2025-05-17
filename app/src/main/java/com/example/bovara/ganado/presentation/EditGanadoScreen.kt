@@ -69,6 +69,8 @@ fun EditGanadoScreen(
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var tempImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showStateChangeDialog by remember { mutableStateOf(false) }
+    var pendingState by remember { mutableStateOf("") }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -536,7 +538,14 @@ fun EditGanadoScreen(
                         title = "Activo",
                         isSelected = state.estado == "activo",
                         color = Color(0xFF4CAF50),
-                        onClick = { viewModel.onEvent(EditGanadoEvent.EstadoChanged("activo")) },
+                        onClick = {
+                            if (state.estadoAnterior in listOf("vendido", "muerto") && state.ganado?.nota?.isNotBlank() == true) {
+                                pendingState = "activo"
+                                showStateChangeDialog = true
+                            } else {
+                                viewModel.onEvent(EditGanadoEvent.EstadoChanged("activo"))
+                            }
+                        },
                         modifier = Modifier.weight(1f)
                     )
 
@@ -544,7 +553,14 @@ fun EditGanadoScreen(
                         title = "Vendido",
                         isSelected = state.estado == "vendido",
                         color = Color(0xFFFFC107),
-                        onClick = { viewModel.onEvent(EditGanadoEvent.EstadoChanged("vendido")) },
+                        onClick = {
+                            if (state.ganado?.nota?.isNotBlank() == true) {
+                                pendingState = "vendido"
+                                showStateChangeDialog = true
+                            } else {
+                                viewModel.onEvent(EditGanadoEvent.EstadoChanged("vendido"))
+                            }
+                        },
                         modifier = Modifier.weight(1f)
                     )
 
@@ -552,8 +568,45 @@ fun EditGanadoScreen(
                         title = "Muerto",
                         isSelected = state.estado == "muerto",
                         color = Color(0xFFE53935),
-                        onClick = { viewModel.onEvent(EditGanadoEvent.EstadoChanged("muerto")) },
+                        onClick = {
+                            if (state.ganado?.nota?.isNotBlank() == true) {
+                                pendingState = "muerto"
+                                showStateChangeDialog = true
+                            } else {
+                                viewModel.onEvent(EditGanadoEvent.EstadoChanged("muerto"))
+                            }
+                        },
                         modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Dialog de confirmación
+                if (showStateChangeDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showStateChangeDialog = false },
+                        title = { Text("Confirmar cambio de estado") },
+                        text = {
+                            Text(
+                                "Este animal tiene notas guardadas. " +
+                                        "${if (pendingState == "activo") "Las notas se mantendrán y podrás editarlas."
+                                        else "Las notas se guardarán pero no podrás editarlas mientras el animal esté marcado como '$pendingState'."}"
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    viewModel.onEvent(EditGanadoEvent.EstadoChanged(pendingState))
+                                    showStateChangeDialog = false
+                                }
+                            ) {
+                                Text("Confirmar")
+                            }
+                        },
+                        dismissButton = {
+                            OutlinedButton(onClick = { showStateChangeDialog = false }) {
+                                Text("Cancelar")
+                            }
+                        }
                     )
                 }
 

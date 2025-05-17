@@ -39,6 +39,7 @@ class EditGanadoViewModel(
                                 color = ganado.color,
                                 fechaNacimiento = ganado.fechaNacimiento,
                                 estado = ganado.estado,
+                                estadoAnterior = ganado.estado, // ← AGREGAR ESTA LÍNEA
                                 canSave = true,
                                 isInitialLoading = false,
                                 isLoading = false,
@@ -302,6 +303,7 @@ data class EditGanadoState(
     val colorError: String? = null,
     val fechaNacimiento: Date? = null,
     val estado: String = "activo",
+    val estadoAnterior: String? = null,
     val isInitialLoading: Boolean = false,
     val isLoading: Boolean = false,
     val canSave: Boolean = false,

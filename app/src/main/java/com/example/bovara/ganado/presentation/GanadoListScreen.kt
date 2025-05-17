@@ -440,6 +440,19 @@ fun GanadoItemCard(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+
+                    // ← AGREGAR ESTE BLOQUE AQUÍ
+                    // Agregar icono si tiene notas
+                    if (ganado.nota.isNotBlank()) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Note,
+                            contentDescription = "Tiene notas",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    // ← FIN DEL BLOQUE AGREGADO
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
