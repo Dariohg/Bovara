@@ -661,12 +661,11 @@ fun GanadoDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Componente de Notas del Animal
-                if (state.ganado != null) {
+                state.ganado?.let { ganado ->
                     AnimalNoteComponent(
-                        note = state.ganado!!.nota,
+                        note = ganado.nota,
                         onNoteChange = { newNote -> viewModel.updateNote(newNote) },
-                        isEditable = state.ganado!!.estado == "activo"
+                        isEditable = ganado.estado == "activo"
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))

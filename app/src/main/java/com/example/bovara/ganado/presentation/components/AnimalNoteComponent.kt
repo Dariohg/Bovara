@@ -70,7 +70,7 @@ fun AnimalNoteComponent(
 
             // Agregar un indicador de estado si el animal no está activo
             if (!isEditable) {
-                HorizontalDivider(
+                Divider(
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 )

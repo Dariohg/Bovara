@@ -39,7 +39,8 @@ class EditGanadoViewModel(
                                 color = ganado.color,
                                 fechaNacimiento = ganado.fechaNacimiento,
                                 estado = ganado.estado,
-                                estadoAnterior = ganado.estado, // ← AGREGAR ESTA LÍNEA
+                                estadoAnterior = ganado.estado,
+                                nota = ganado.nota, // Aseguramos que la nota se carga correctamente
                                 canSave = true,
                                 isInitialLoading = false,
                                 isLoading = false,
@@ -107,6 +108,9 @@ class EditGanadoViewModel(
             }
             is EditGanadoEvent.ImageUrlChanged -> {
                 _state.update { it.copy(imagenUrl = event.value) }
+            }
+            is EditGanadoEvent.NotaChanged -> {
+                _state.update { it.copy(nota = event.value) }
             }
             is EditGanadoEvent.SaveGanado -> saveGanado()
         }
@@ -201,7 +205,8 @@ class EditGanadoViewModel(
                         state.color != state.ganado.color ||
                         state.fechaNacimiento != state.ganado.fechaNacimiento ||
                         state.estado != state.ganado.estado ||
-                        state.numeroArete != state.ganado.numeroArete // Considerar cambios en el número de arete
+                        state.nota != state.ganado.nota || // Añadimos el cambio de nota como una razón para permitir guardar
+                        state.numeroArete != state.ganado.numeroArete
                 )
 
         val areteValido = state.numeroArete.length == 10 &&
@@ -213,11 +218,10 @@ class EditGanadoViewModel(
                 state.tipoError == null &&
                 state.color.isNotBlank() &&
                 state.colorError == null &&
-                areteValido // Usar la nueva condición que verifica tanto el formato como la longitud
+                areteValido
 
         _state.update { it.copy(canSave = canSave) }
     }
-
 
     private fun saveGanado() {
         val state = _state.value
@@ -229,8 +233,7 @@ class EditGanadoViewModel(
 
         viewModelScope.launch {
             try {
-                // Llamar al caso de uso para guardar el ganado
-
+                // Verificar si el número de arete ya existe
                 if (state.numeroArete != state.ganado.numeroArete) {
                     if (ganadoUseCase.areteExists(state.numeroArete)) {
                         _state.update {
@@ -244,6 +247,9 @@ class EditGanadoViewModel(
                     }
                 }
 
+                // Preservar la nota original
+                val nota = state.nota ?: state.ganado.nota
+
                 val id = ganadoUseCase.saveGanado(
                     id = ganadoId,
                     numeroArete = state.numeroArete,
@@ -256,7 +262,8 @@ class EditGanadoViewModel(
                     cantidadCrias = state.ganado.cantidadCrias,
                     madreId = state.ganado.madreId,
                     imagenUrl = state.imagenUrl ?: state.ganado.imagenUrl,
-                    imagenesSecundarias = state.ganado.imagenesSecundarias
+                    imagenesSecundarias = state.ganado.imagenesSecundarias,
+                    nota = nota // Usamos la nota original o la actualizada
                 )
 
                 // Actualizar el estado para indicar que se guardó correctamente
@@ -304,6 +311,7 @@ data class EditGanadoState(
     val fechaNacimiento: Date? = null,
     val estado: String = "activo",
     val estadoAnterior: String? = null,
+    val nota: String = "", // Añadimos la nota al estado
     val isInitialLoading: Boolean = false,
     val isLoading: Boolean = false,
     val canSave: Boolean = false,
@@ -320,5 +328,6 @@ sealed class EditGanadoEvent {
     data class ColorChanged(val value: String) : EditGanadoEvent()
     data class FechaNacimientoChanged(val value: Date) : EditGanadoEvent()
     data class EstadoChanged(val value: String) : EditGanadoEvent()
+    data class NotaChanged(val value: String) : EditGanadoEvent() // Añadimos el evento para cambiar la nota
     object SaveGanado : EditGanadoEvent()
 }

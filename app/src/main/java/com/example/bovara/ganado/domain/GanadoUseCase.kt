@@ -71,7 +71,8 @@ class GanadoUseCase(
         cantidadCrias: Int = 0,
         estado: String = "activo",
         imagenUrl: String? = null,
-        imagenesSecundarias: List<String>? = null
+        imagenesSecundarias: List<String>? = null,
+        nota: String = "" // Añadimos el parámetro nota con valor por defecto
     ): Long {
         println("GanadoUseCase.saveGanado: Iniciando guardado")
 
@@ -128,6 +129,13 @@ class GanadoUseCase(
 
         println("GanadoUseCase.saveGanado: Todas las validaciones pasaron correctamente")
 
+        // Si es una actualización, recuperamos la nota existente si no se proporciona una nueva
+        var finalNota = nota
+        if (id > 0 && nota.isBlank()) {
+            val existingGanado = repository.getGanadoById(id).first()
+            finalNota = existingGanado?.nota ?: ""
+        }
+
         val ganado = GanadoEntity(
             id = id,
             numeroArete = numeroArete,
@@ -141,7 +149,8 @@ class GanadoUseCase(
             estado = estado,
             imagenUrl = imagenUrl,
             imagenesSecundarias = imagenesSecundarias,
-            fechaRegistro = Date()
+            fechaRegistro = if (id == 0) Date() else repository.getGanadoById(id).first()?.fechaRegistro ?: Date(),
+            nota = finalNota
         )
 
         println("GanadoUseCase.saveGanado: Entidad creada, guardando en repositorio")
@@ -159,21 +168,11 @@ class GanadoUseCase(
         val ganadoActual = repository.getGanadoById(ganadoId).first()
 
         ganadoActual?.let { ganado ->
-            // Actualizar solo el estado, preservando todos los demás datos
+            // Actualizar solo el estado, preservando todos los demás datos incluyendo la nota
             val ganadoActualizado = ganado.copy(estado = nuevoEstado)
             repository.updateGanado(ganadoActualizado)
         }
     }
-
-    // ELIMINA ESTE MÉTODO DUPLICADO - NO LO INCLUYAS
-    /*
-    suspend fun updateGanadoNote(ganadoId: Int, note: String) {
-        val ganado = getGanadoById(ganadoId).first()
-            ?: throw IllegalArgumentException("Animal no encontrado")
-        val updated = ganado.copy(nota = note)
-        repository.updateGanado(updated)
-    }
-    */
 
     suspend fun updateGanado(ganado: GanadoEntity) = repository.updateGanado(ganado)
 
