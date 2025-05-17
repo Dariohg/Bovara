@@ -49,6 +49,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
+import com.example.bovara.core.navigation.Screens
 import com.example.bovara.core.utils.ImageUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +64,8 @@ fun HomeScreen(
     onNavigateToSearchResults: (String) -> Unit,
     viewModel: HomeViewModel,
     onNavigateToStatistics: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+
 ) {
     val ganado by viewModel.ganado.collectAsState()
     val filteredGanado by viewModel.filteredGanado.collectAsState()
@@ -81,6 +84,15 @@ fun HomeScreen(
                             fontSize = 26.sp
                         )
                     )
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Configuración",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background

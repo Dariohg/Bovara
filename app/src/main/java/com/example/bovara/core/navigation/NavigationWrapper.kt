@@ -24,6 +24,7 @@ import com.example.bovara.medicamento.presentation.BatchVaccinationScreen
 import com.example.bovara.medicamento.presentation.RegisterMedicamentoScreen
 import com.example.bovara.medicamento.presentation.VaccinationHistoryScreen
 import com.example.bovara.medicamento.presentation.VacunasGanadoScreen
+import com.example.bovara.settings.presentation.SettingsScreen
 import com.example.bovara.statistics.presentation.StatisticsScreen
 
 @Composable
@@ -344,6 +345,13 @@ fun NavigationWrapper() {
                     navController.popBackStack()
                 },
                 ganadoUseCase = ganadoUseCase
+            )
+        }
+        composable(route = Screens.SETTINGS) {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }

@@ -1,22 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Acceso a archivos temporales para la cámara -->
+    <!-- Rutas existentes -->
     <external-path
         name="external_files"
         path="." />
     <external-files-path
         name="external_files"
         path="Pictures" />
-    <!-- Acceso a archivos dentro del directorio de la aplicación -->
     <files-path
         name="files"
         path="." />
-    <!-- Acceso a archivos de caché -->
     <cache-path
         name="cache"
         path="." />
-    <!-- Acceso a archivos en el almacenamiento externo específico de la aplicación -->
     <external-files-path
         name="images"
         path="images" />
+
+    <!-- Nuevas rutas para respaldos y exportaciones -->
+    <external-files-path
+        name="backups"
+        path="backups" />
+    <external-files-path
+        name="exports"
+        path="exports" />
+    <cache-path
+        name="temp"
+        path="db_restore_temp" />
 </paths>

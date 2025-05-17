@@ -24,4 +24,7 @@ object Screens {
     const val VACCINATION_HISTORY = "vaccination_history"
     const val BATCH_DETAIL = "batch_detail"
     const val REGISTER_MEDICAMENTO = "register_medicamento"
+
+    const val SETTINGS = "settings"
+
 }
